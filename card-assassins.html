@@ -4,161 +4,136 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Card Assassins</title>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FIREBASE SETUP — replace these values with your own Firebase project config
+     1. Go to https://console.firebase.google.com
+     2. Create a project → Add app → Web
+     3. Copy the firebaseConfig values below
+     4. In Firebase console: Build → Realtime Database → Create database (test mode)
+  ════════════════════════════════════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+  apiKey: "AIzaSyAZiZ97nsD9YkTYbxK_Pfbfxlsy4d8zsC8",
+  authDomain: "cardassassin-ca1ff.firebaseapp.com",
+  databaseURL: "https://cardassassin-ca1ff-default-rtdb.firebaseio.com",
+  projectId: "cardassassin-ca1ff",
+  storageBucket: "cardassassin-ca1ff.firebasestorage.app",
+  messagingSenderId: "769140313338",
+  appId: "1:769140313338:web:930a779fb24c981d3f0d43",
+  measurementId: "G-0VBV2RQX6Q"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // Expose DB helpers to the rest of the page
+  window._db = {
+    save: (code, data) => set(ref(db, 'games/' + code), data),
+    load: async (code) => {
+      const snap = await get(ref(db, 'games/' + code));
+      return snap.exists() ? snap.val() : null;
+    },
+    watch: (code, cb) => onValue(ref(db, 'games/' + code), snap => {
+      if (snap.exists()) cb(snap.val());
+    })
+  };
+
+  // Signal that Firebase is ready
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --color-bg: #ffffff;
   --color-bg-secondary: #f5f5f5;
-  --color-bg-tertiary: #ebebeb;
+  --color-border: #e0e0e0;
   --color-text: #111111;
   --color-text-secondary: #666666;
-  --color-border: #e0e0e0;
-  --color-danger-bg: #fff0f0;
-  --color-danger-text: #c0392b;
-  --color-success-bg: #f0fff4;
-  --color-success-text: #1a7f3c;
-  --color-warn-bg: #fff8e1;
-  --color-warn-text: #b45309;
-  --color-info-bg: #eff6ff;
-  --color-info-text: #1d4ed8;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --color-danger-bg: #fff0f0;   --color-danger-text: #c0392b;
+  --color-success-bg: #f0fff4;  --color-success-text: #1a7f3c;
+  --color-warn-bg: #fff8e1;     --color-warn-text: #b45309;
+  --color-info-bg: #eff6ff;     --color-info-text: #1d4ed8;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
 }
-body {
-  font-family: var(--font-sans);
-  color: var(--color-text);
-  background: var(--color-bg);
-  font-size: 15px;
-  min-height: 100vh;
-}
-#app {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 1rem 1rem 3rem;
-}
+body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); font-size: 15px; min-height: 100vh; }
+#app { max-width: 480px; margin: 0 auto; padding: 1rem 1rem 3rem; }
 h2 { font-size: 18px; font-weight: 600; margin-bottom: 1rem; }
 h3 { font-size: 15px; font-weight: 600; margin-bottom: 0.75rem; }
 .screen { display: none; padding-top: 0.5rem; }
 .screen.active { display: block; }
-.card {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
-}
-.badge {
-  display: inline-block; font-size: 12px;
-  padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 600;
-}
-.badge-danger { background: var(--color-danger-bg); color: var(--color-danger-text); }
+.card { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 600; }
+.badge-danger  { background: var(--color-danger-bg);  color: var(--color-danger-text); }
 .badge-success { background: var(--color-success-bg); color: var(--color-success-text); }
-.badge-warn { background: var(--color-warn-bg); color: var(--color-warn-text); }
-.badge-info { background: var(--color-info-bg); color: var(--color-info-text); }
-input[type=text], select {
-  width: 100%; padding: 8px 10px; border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
-  background: var(--color-bg); color: var(--color-text); margin-bottom: 0.5rem;
-  outline: none;
-}
+.badge-warn    { background: var(--color-warn-bg);    color: var(--color-warn-text); }
+.badge-info    { background: var(--color-info-bg);    color: var(--color-info-text); }
+input[type=text], select { width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; background: var(--color-bg); color: var(--color-text); margin-bottom: 0.5rem; outline: none; }
 input[type=text]:focus, select:focus { border-color: var(--color-text); }
 .btn { padding: 8px 18px; border-radius: var(--radius-md); cursor: pointer; font-size: 14px; font-weight: 500; border: none; font-family: inherit; }
-.btn-primary { background: var(--color-text); color: var(--color-bg); }
+.btn-primary  { background: var(--color-text); color: var(--color-bg); }
 .btn-secondary { background: var(--color-bg-secondary); color: var(--color-text); border: 1px solid var(--color-border); }
 .btn-danger-outline { background: var(--color-danger-bg); color: var(--color-danger-text); border: 1px solid #fca5a5; }
 .btn-sm { padding: 5px 12px; font-size: 13px; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
-.tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--color-bg-secondary); border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm); padding: 4px 10px; font-size: 13px; margin: 3px;
-}
+.tag { display: inline-flex; align-items: center; gap: 6px; background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 4px 10px; font-size: 13px; margin: 3px; }
 .tag button { background: none; border: none; cursor: pointer; color: var(--color-text-secondary); font-size: 15px; line-height: 1; padding: 0; }
-.player-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 0; border-bottom: 1px solid var(--color-border);
-}
+.player-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--color-border); }
 .player-row:last-child { border-bottom: none; }
-.avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--color-info-bg); color: var(--color-info-text);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600; flex-shrink: 0;
-}
-.avatar.dead { background: var(--color-danger-bg); color: var(--color-danger-text); }
-.avatar.rogue { background: var(--color-warn-bg); color: var(--color-warn-text); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--color-info-bg); color: var(--color-info-text); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+.avatar.dead  { background: var(--color-danger-bg); color: var(--color-danger-text); }
+.avatar.rogue { background: var(--color-warn-bg);   color: var(--color-warn-text); }
 .muted { color: var(--color-text-secondary); font-size: 13px; }
 .error-msg { color: var(--color-danger-text); font-size: 13px; margin-top: 4px; min-height: 18px; }
-.success-text { color: var(--color-success-text); }
 .divider { border: none; border-top: 1px solid var(--color-border); margin: 1rem 0; }
-.tab-bar {
-  display: flex; gap: 0; margin-bottom: 1rem;
-  border-bottom: 1px solid var(--color-border);
-}
-.tab {
-  padding: 8px 16px; font-size: 14px; cursor: pointer;
-  border-bottom: 2px solid transparent; color: var(--color-text-secondary);
-  background: none; border-top: none; border-left: none; border-right: none;
-  font-family: inherit; font-weight: 500;
-}
+.tab-bar { display: flex; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); }
+.tab { padding: 8px 16px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--color-text-secondary); background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; font-weight: 500; }
 .tab.active { color: var(--color-text); border-bottom: 2px solid var(--color-text); }
 .hidden { display: none !important; }
-.upload-zone {
-  border: 2px dashed var(--color-border); border-radius: var(--radius-lg);
-  padding: 1.5rem; text-align: center; cursor: pointer; transition: background 0.15s;
-  margin-bottom: 0.75rem;
-}
+.upload-zone { border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center; cursor: pointer; transition: background 0.15s; margin-bottom: 0.75rem; }
 .upload-zone:hover { background: var(--color-bg-secondary); }
 .upload-zone input[type=file] { display: none; }
-.secret-box {
-  background: var(--color-bg-secondary); border-radius: var(--radius-md);
-  padding: 1.25rem; text-align: center; margin: 0.75rem 0;
-}
+.secret-box { background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: 1.25rem; text-align: center; margin: 0.75rem 0; }
 .secret-box .big { font-size: 20px; font-weight: 600; margin: 0.5rem 0; }
-.kw-pill {
-  background: var(--color-bg-secondary); border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem; margin: 4px 0; font-size: 13px;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.hero {
-  text-align: center; padding: 2.5rem 0 1.5rem;
-}
-.hero-icon { font-size: 40px; margin-bottom: 0.5rem; }
-.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 0.25rem; }
-.game-code-display {
-  font-size: 32px; font-weight: 700; letter-spacing: 5px;
-  text-align: center; padding: 1rem; background: var(--color-bg-secondary);
-  border-radius: var(--radius-md); margin: 0.5rem 0;
-}
+.kw-pill { background: var(--color-bg-secondary); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin: 4px 0; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.game-code-display { font-size: 32px; font-weight: 700; letter-spacing: 5px; text-align: center; padding: 1rem; background: var(--color-bg-secondary); border-radius: var(--radius-md); margin: 0.5rem 0; }
+#firebase-banner { background: var(--color-warn-bg); color: var(--color-warn-text); border: 1px solid #fcd34d; border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; line-height: 1.5; }
 </style>
 </head>
 <body>
 <div id="app">
 
+  <!-- Firebase not configured warning -->
+  <div id="firebase-banner" style="display:none;">
+    ⚠️ <strong>Firebase not configured.</strong> Open this file and replace the <code>REPLACE_WITH_YOUR_*</code> values in the Firebase config at the top with your own project credentials.
+    See the comments in the HTML source for setup instructions.
+  </div>
+
   <!-- HOME -->
   <div id="screen-home" class="screen active">
-    <div class="hero">
-      <div class="hero-icon">🗡️</div>
-      <h1>Card Assassins</h1>
+    <div style="text-align:center; padding:2.5rem 0 1.5rem;">
+      <div style="font-size:40px; margin-bottom:0.5rem;">🗡️</div>
+      <h2 style="font-size:24px; font-weight:700; margin-bottom:0.25rem;">Card Assassins</h2>
       <p class="muted">Digital companion · Up to 12 players</p>
     </div>
     <div class="btn-row" style="justify-content:center;">
       <button class="btn btn-primary" onclick="showScreen('screen-host-setup')">Host a game</button>
       <button class="btn btn-secondary" onclick="showScreen('screen-join')">Join a game</button>
     </div>
-    <p class="muted" style="text-align:center; margin-top:1.5rem; font-size:12px;">
-      One person hosts — everyone else joins on their own device with the game code.
-    </p>
+    <p class="muted" style="text-align:center; margin-top:1.5rem; font-size:12px;">One person hosts — everyone else joins on their own device with the game code.</p>
   </div>
 
   <!-- HOST SETUP -->
   <div id="screen-host-setup" class="screen">
     <div class="tab-bar">
-      <button class="tab active" onclick="switchTab('tab-players', this)">Players</button>
-      <button class="tab" onclick="switchTab('tab-killwords', this)">Kill words</button>
-      <button class="tab" onclick="switchTab('tab-settings', this)">Settings</button>
+      <button class="tab active" onclick="switchTab('tab-players',this)">Players</button>
+      <button class="tab" onclick="switchTab('tab-killwords',this)">Kill words</button>
+      <button class="tab" onclick="switchTab('tab-settings',this)">Settings</button>
     </div>
 
     <div id="tab-players">
@@ -175,7 +150,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
     <div id="tab-killwords" class="hidden">
       <div class="card">
         <h3>Kill word list</h3>
-        <p class="muted" style="margin-bottom:0.75rem;">Each player gets kill words drawn from this pool. Upload a file, add manually, or use the defaults.</p>
+        <p class="muted" style="margin-bottom:0.75rem;">Upload a file, add manually, or use the defaults. One word or phrase per line in the text file.</p>
         <div class="upload-zone" onclick="document.getElementById('kw-file').click()">
           <div style="font-size:28px; margin-bottom:6px;">📄</div>
           <p style="font-size:14px; font-weight:500; margin-bottom:2px;">Upload a text file</p>
@@ -195,7 +170,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
         </div>
         <div id="kw-tags"></div>
         <div class="divider"></div>
-        <p class="muted" style="font-size:12px;">💡 Tip: Common words that come up naturally in conversation make the best kill words.</p>
+        <p class="muted" style="font-size:12px;">💡 Common words that come up naturally in conversation make the best kill words.</p>
       </div>
     </div>
 
@@ -214,7 +189,6 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
           <option value="Dagger">Dagger</option>
           <option value="Poison">Poison</option>
         </select>
-        <p class="muted" style="margin-top:0.75rem; font-size:12px;">Card style determines which side of the Kill Word cards players draw from.</p>
       </div>
     </div>
 
@@ -224,14 +198,14 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
     </div>
   </div>
 
-  <!-- HOST GAME VIEW -->
+  <!-- HOST GAME -->
   <div id="screen-host-game" class="screen">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
       <h2 style="margin:0;">Game in progress</h2>
       <button class="btn btn-danger-outline btn-sm" onclick="endGame()">End game</button>
     </div>
     <div class="card">
-      <p class="muted" style="margin-bottom:4px; font-size:12px;">Game code — share with players</p>
+      <p class="muted" style="font-size:12px; margin-bottom:4px;">Game code — share with players</p>
       <div class="game-code-display" id="host-game-code"></div>
     </div>
     <div class="card">
@@ -242,7 +216,6 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <h3>Assassination log</h3>
       <div id="assassination-log" class="muted" style="font-size:13px;">No assassinations yet.</div>
     </div>
-    <button onclick="refreshHost()" class="btn btn-secondary" style="width:100%; margin-top:0;">↻ Refresh</button>
   </div>
 
   <!-- JOIN -->
@@ -295,7 +268,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
     </div>
     <div class="card" id="pv-rogue-card" style="display:none;">
       <h3>🔥 You are Rogue</h3>
-      <p class="muted" style="font-size:13px; margin-bottom:0.5rem;">You eliminated the player who was targeting you. You can now target anyone — but anyone can target you too. Stay quiet!</p>
+      <p class="muted" style="font-size:13px; margin-bottom:0.5rem;">You eliminated the player targeting you. You can now target anyone — but anyone can target you. Stay quiet!</p>
       <div id="pv-rogue-target"></div>
     </div>
     <div class="card">
@@ -308,7 +281,6 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
         <span id="pv-game-code" style="font-weight:600; letter-spacing:3px;"></span>
       </div>
     </div>
-    <button onclick="refreshPlayerView()" class="btn btn-secondary" style="width:100%; margin-bottom:1rem;">↻ Refresh game state</button>
   </div>
 
   <!-- GAME OVER -->
@@ -329,7 +301,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 </div><!-- #app -->
 
 <script>
-// ── State ─────────────────────────────────────────────────────────────────────
+// ── Defaults ──────────────────────────────────────────────────────────────────
 const DEFAULT_KILL_WORDS = [
   "actually","absolutely","amazing","awesome","basically","beautiful","certainly",
   "clearly","cool","definitely","exactly","fantastic","fine","great","honestly",
@@ -338,30 +310,44 @@ const DEFAULT_KILL_WORDS = [
   "wonderful","yeah","yes","you know","like","wait","what","no","whatever","fair enough"
 ];
 
-let state = {
+let G = {
   players: [], killWords: [...DEFAULT_KILL_WORDS], kwPerPlayer: 3,
-  assassinStyle: 'Dagger', gameCode: null, gameStarted: false,
-  assignments: [], assassinations: [], currentPlayerName: null, isHost: false
+  assassinStyle: 'Dagger', gameCode: null, assignments: [],
+  assassinations: [], currentPlayerName: null, isHost: false
 };
-let pollInterval = null;
 
-// ── Storage (localStorage) ─────────────────────────────────────────────────────
-function saveGame(code, data) {
-  try { localStorage.setItem('ca_game_' + code, JSON.stringify(data)); return true; }
-  catch(e) { console.error('Save failed', e); return false; }
+let unsubscribe = null; // Firebase real-time listener handle
+
+// ── Firebase readiness ────────────────────────────────────────────────────────
+let firebaseReady = false;
+window.addEventListener('firebase-ready', () => {
+  firebaseReady = true;
+  // Show warning if config was not filled in
+  if (document.querySelector('script[type=module]').textContent.includes('REPLACE_WITH_YOUR_API_KEY')) {
+    document.getElementById('firebase-banner').style.display = 'block';
+  }
+});
+
+async function dbSave(code, data) {
+  if (!firebaseReady) { console.error('Firebase not ready'); return; }
+  await window._db.save(code, data);
 }
-function loadGame(code) {
-  try { const v = localStorage.getItem('ca_game_' + code); return v ? JSON.parse(v) : null; }
-  catch(e) { return null; }
+async function dbLoad(code) {
+  if (!firebaseReady) return null;
+  return await window._db.load(code);
+}
+function dbWatch(code, cb) {
+  if (!firebaseReady) return;
+  if (unsubscribe) unsubscribe();
+  unsubscribe = window._db.watch(code, cb);
 }
 
-// ── Navigation ─────────────────────────────────────────────────────────────────
+// ── Navigation ────────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0, 0);
 }
-
 function switchTab(id, btn) {
   document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
@@ -375,40 +361,35 @@ function addPlayer() {
   const name = input.value.trim();
   const err = document.getElementById('player-error');
   if (!name) { err.textContent = 'Enter a name.'; return; }
-  if (state.players.find(p => p.toLowerCase() === name.toLowerCase())) { err.textContent = 'Name already added.'; return; }
-  if (state.players.length >= 12) { err.textContent = 'Max 12 players.'; return; }
-  err.textContent = ''; state.players.push(name); input.value = '';
+  if (G.players.find(p => p.toLowerCase() === name.toLowerCase())) { err.textContent = 'Name already added.'; return; }
+  if (G.players.length >= 12) { err.textContent = 'Max 12 players.'; return; }
+  err.textContent = ''; G.players.push(name); input.value = '';
   renderPlayerList();
 }
-function removePlayer(name) {
-  state.players = state.players.filter(p => p !== name); renderPlayerList();
-}
+function removePlayer(name) { G.players = G.players.filter(p => p !== name); renderPlayerList(); }
 function renderPlayerList() {
   const el = document.getElementById('player-list');
-  if (!state.players.length) { el.innerHTML = '<p class="muted">No players yet.</p>'; return; }
-  el.innerHTML = state.players.map(p => `
+  if (!G.players.length) { el.innerHTML = '<p class="muted">No players yet.</p>'; return; }
+  el.innerHTML = G.players.map(p => `
     <div class="player-row">
       <div class="avatar">${p[0].toUpperCase()}</div>
       <span style="flex:1;">${esc(p)}</span>
-      <button class="btn btn-danger-outline btn-sm" onclick="removePlayer('${esc(p)}')">✕</button>
+      <button class="btn btn-danger-outline btn-sm" onclick="removePlayer('${esc(p).replace(/'/g,"\\'")}')">✕</button>
     </div>`).join('');
 }
 
-// ── Kill Words ─────────────────────────────────────────────────────────────────
-function handleFileUpload(event) {
-  const file = event.target.files[0];
+// ── Kill words ────────────────────────────────────────────────────────────────
+function handleFileUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
   const msgEl = document.getElementById('import-msg');
-  if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
-    const lines = e.target.result.split(/\r?\n/);
-    const words = lines.map(l => l.trim().toLowerCase()).filter(l => l.length > 0);
-    const dupes = words.filter(w => state.killWords.includes(w));
-    const newWords = words.filter(w => !state.killWords.includes(w));
-    state.killWords.push(...newWords);
-    renderKillWords();
-    msgEl.innerHTML = `<span class="success-text">✅ Imported ${newWords.length} word${newWords.length !== 1 ? 's' : ''}${dupes.length ? ` (${dupes.length} duplicate${dupes.length !== 1 ? 's' : ''} skipped)` : ''}.</span>`;
-    event.target.value = '';
+  reader.onload = ev => {
+    const words = ev.target.result.split(/\r?\n/).map(l => l.trim().toLowerCase()).filter(Boolean);
+    const dupes = words.filter(w => G.killWords.includes(w));
+    const fresh = words.filter(w => !G.killWords.includes(w));
+    G.killWords.push(...fresh); renderKillWords();
+    msgEl.innerHTML = `<span style="color:var(--color-success-text)">✅ Imported ${fresh.length} word${fresh.length!==1?'s':''}${dupes.length?` (${dupes.length} duplicate${dupes.length!==1?'s':''} skipped)`:''}.</span>`;
+    e.target.value = '';
   };
   reader.onerror = () => { msgEl.innerHTML = '<span style="color:var(--color-danger-text)">Could not read file.</span>'; };
   reader.readAsText(file);
@@ -418,111 +399,116 @@ function addKillWord() {
   const word = input.value.trim().toLowerCase();
   const err = document.getElementById('kw-error');
   if (!word) { err.textContent = 'Enter a word.'; return; }
-  if (state.killWords.includes(word)) { err.textContent = 'Already in list.'; return; }
-  err.textContent = ''; state.killWords.push(word); input.value = '';
-  renderKillWords();
+  if (G.killWords.includes(word)) { err.textContent = 'Already in list.'; return; }
+  err.textContent = ''; G.killWords.push(word); input.value = ''; renderKillWords();
 }
-function removeKillWord(word) {
-  state.killWords = state.killWords.filter(w => w !== word); renderKillWords();
-}
-function clearAllWords() {
-  if (confirm('Clear all kill words?')) { state.killWords = []; renderKillWords(); }
-}
+function removeKillWord(word) { G.killWords = G.killWords.filter(w => w !== word); renderKillWords(); }
+function clearAllWords() { if (confirm('Clear all kill words?')) { G.killWords = []; renderKillWords(); } }
 function renderKillWords() {
-  document.getElementById('kw-count').textContent = state.killWords.length + ' words in pool';
-  document.getElementById('kw-tags').innerHTML = state.killWords.map(w =>
-    `<span class="tag">${esc(w)} <button onclick="removeKillWord('${esc(w).replace(/'/g, "\\'")}')">×</button></span>`
+  document.getElementById('kw-count').textContent = G.killWords.length + ' words in pool';
+  document.getElementById('kw-tags').innerHTML = G.killWords.map(w =>
+    `<span class="tag">${esc(w)} <button onclick="removeKillWord('${esc(w).replace(/'/g,"\\'")}')">×</button></span>`
   ).join('');
 }
 
-// ── Game Setup ─────────────────────────────────────────────────────────────────
-function generateCode() {
-  const words = ['WOLF','HAWK','VIPER','BLADE','GHOST','SHADOW','RAVEN','STORM','COBRA','DUSK','IRON','ECHO'];
-  return words[Math.floor(Math.random() * words.length)] + Math.floor(Math.random() * 90 + 10);
-}
+// ── Game start ────────────────────────────────────────────────────────────────
 function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]];
-  }
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
   return a;
 }
-
-function startGame() {
-  state.kwPerPlayer = parseInt(document.getElementById('kw-per-player').value);
-  state.assassinStyle = document.getElementById('assassin-style').value;
-  if (state.players.length < 2) { alert('Add at least 2 players to start.'); return; }
-  const minWords = state.players.length * state.kwPerPlayer;
-  if (state.killWords.length < minWords) {
-    alert(`Need at least ${minWords} kill words for ${state.players.length} players × ${state.kwPerPlayer} words each. Add more words or reduce words per player.`); return;
-  }
-  state.gameCode = generateCode(); state.isHost = true;
-  state.gameStarted = true; state.assassinations = [];
-  const sp = shuffle(state.players); const sw = shuffle(state.killWords);
-  state.assignments = sp.map((player, i) => ({
-    player,
-    assassinCard: state.assassinStyle + ' ' + player,
-    targetPlayer: sp[(i + 1) % sp.length],
-    killWords: sw.slice(i * state.kwPerPlayer, i * state.kwPerPlayer + state.kwPerPlayer),
-    killPoints: 0, alive: true, isRogue: false, rogueTarget: null
-  }));
-  saveGame(state.gameCode, {
-    gameCode: state.gameCode, assassinStyle: state.assassinStyle,
-    assignments: state.assignments, assassinations: state.assassinations,
-    gameStarted: true, players: state.players
-  });
-  renderHostGame(); showScreen('screen-host-game'); startPolling();
+function generateCode() {
+  const w=['WOLF','HAWK','VIPER','BLADE','GHOST','SHADOW','RAVEN','STORM','COBRA','DUSK','IRON','ECHO'];
+  return w[Math.floor(Math.random()*w.length)]+Math.floor(Math.random()*90+10);
 }
 
-// ── Host View ──────────────────────────────────────────────────────────────────
-function renderHostGame() {
-  document.getElementById('host-game-code').textContent = state.gameCode;
-  document.getElementById('alive-count').textContent = state.assignments.filter(a => a.alive).length + ' alive';
-  document.getElementById('host-player-list').innerHTML = state.assignments.map(a => `
+async function startGame() {
+  if (!firebaseReady) { alert('Firebase is not configured yet. See the banner at the top of the page for setup instructions.'); return; }
+  G.kwPerPlayer = parseInt(document.getElementById('kw-per-player').value);
+  G.assassinStyle = document.getElementById('assassin-style').value;
+  if (G.players.length < 2) { alert('Add at least 2 players.'); return; }
+  const minWords = G.players.length * G.kwPerPlayer;
+  if (G.killWords.length < minWords) { alert(`Need at least ${minWords} kill words (${G.players.length} players × ${G.kwPerPlayer}). Add more or reduce words per player.`); return; }
+
+  G.gameCode = generateCode(); G.isHost = true;
+  const sp = shuffle(G.players), sw = shuffle(G.killWords);
+  G.assignments = sp.map((player, i) => ({
+    player,
+    assassinCard: G.assassinStyle + ' ' + player,
+    targetPlayer: sp[(i+1) % sp.length],
+    killWords: sw.slice(i * G.kwPerPlayer, i * G.kwPerPlayer + G.kwPerPlayer),
+    killPoints: 0, alive: true, isRogue: false, rogueTarget: null
+  }));
+  G.assassinations = [];
+
+  const payload = { gameCode: G.gameCode, assignments: G.assignments, assassinations: [], gameStarted: true, players: G.players };
+  await dbSave(G.gameCode, payload);
+  renderHostGame(G);
+  showScreen('screen-host-game');
+
+  // Real-time updates for host
+  dbWatch(G.gameCode, game => { Object.assign(G, game); renderHostGame(game); if (!game.gameStarted && game.assassinations && game.assassinations.length) showGameOver(game); });
+}
+
+// ── Host view ─────────────────────────────────────────────────────────────────
+function renderHostGame(game) {
+  document.getElementById('host-game-code').textContent = game.gameCode;
+  document.getElementById('alive-count').textContent = game.assignments.filter(a=>a.alive).length + ' alive';
+  document.getElementById('host-player-list').innerHTML = game.assignments.map(a => `
     <div class="player-row">
-      <div class="avatar ${!a.alive ? 'dead' : a.isRogue ? 'rogue' : ''}">${a.player[0]}</div>
+      <div class="avatar ${!a.alive?'dead':a.isRogue?'rogue':''}">${a.player[0]}</div>
       <span style="flex:1;">${esc(a.player)}</span>
-      <span style="font-size:12px; color:var(--color-text-secondary); margin-right:8px;">${a.killPoints} pts</span>
-      ${!a.alive ? '<span class="badge badge-danger">Eliminated</span>' : a.isRogue ? '<span class="badge badge-warn">Rogue</span>' : '<span class="badge badge-success">Alive</span>'}
+      <span style="font-size:12px;color:var(--color-text-secondary);margin-right:8px;">${a.killPoints} pts</span>
+      ${!a.alive?'<span class="badge badge-danger">Eliminated</span>':a.isRogue?'<span class="badge badge-warn">Rogue</span>':'<span class="badge badge-success">Alive</span>'}
     </div>`).join('');
   const log = document.getElementById('assassination-log');
-  log.innerHTML = state.assassinations.length
-    ? state.assassinations.map(e =>
-        `<div style="padding:5px 0; border-bottom:1px solid var(--color-border);">🗡️ <strong>${esc(e.killer)}</strong> eliminated <strong>${esc(e.victim)}</strong> with "<em>${esc(e.word)}</em>"</div>`
-      ).join('')
+  log.innerHTML = (game.assassinations||[]).length
+    ? game.assassinations.map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--color-border);">🗡️ <strong>${esc(e.killer)}</strong> eliminated <strong>${esc(e.victim)}</strong> with "<em>${esc(e.word)}</em>"</div>`).join('')
     : '<span class="muted">No assassinations yet.</span>';
 }
 
-async function refreshHost() {
-  const game = loadGame(state.gameCode);
-  if (game) { state = { ...state, ...game }; renderHostGame(); }
+async function endGame() {
+  if (!confirm('End the game now?')) return;
+  const game = await dbLoad(G.gameCode);
+  if (game) { game.gameStarted = false; await dbSave(G.gameCode, game); }
+  showGameOver(game || { assignments: G.assignments });
 }
 
-// ── Join ───────────────────────────────────────────────────────────────────────
-function joinGame() {
+// ── Join ──────────────────────────────────────────────────────────────────────
+async function joinGame() {
   const name = document.getElementById('join-name').value.trim();
   const code = document.getElementById('join-code').value.trim().toUpperCase();
-  const err = document.getElementById('join-error');
+  const err  = document.getElementById('join-error');
   if (!name || !code) { err.textContent = 'Enter your name and game code.'; return; }
-  err.textContent = 'Looking up game...';
-  const game = loadGame(code);
+  err.textContent = 'Looking up game…';
+  const game = await dbLoad(code);
   if (!game) { err.textContent = 'Game not found. Check the code and try again.'; return; }
   const assignment = game.assignments.find(a => a.player.toLowerCase() === name.toLowerCase());
-  if (!assignment) { err.textContent = `"${name}" isn't in this game. Check your name matches what the host entered.`; return; }
+  if (!assignment) { err.textContent = `"${esc(name)}" isn't in this game. Check your name matches what the host entered.`; return; }
   err.textContent = '';
-  state = { ...state, ...game, currentPlayerName: assignment.player, isHost: false };
-  renderPlayerView(assignment, game); showScreen('screen-player-view'); startPolling(code);
+  G = { ...G, ...game, currentPlayerName: assignment.player, isHost: false };
+  renderPlayerView(assignment, game);
+  showScreen('screen-player-view');
+
+  // Real-time updates for player
+  dbWatch(code, updatedGame => {
+    G = { ...G, ...updatedGame };
+    const a = updatedGame.assignments.find(a => a.player === G.currentPlayerName);
+    if (a) renderPlayerView(a, updatedGame);
+    if (!updatedGame.gameStarted && updatedGame.assassinations && updatedGame.assassinations.length) showGameOver(updatedGame);
+  });
 }
 
-// ── Player View ────────────────────────────────────────────────────────────────
+// ── Player view ───────────────────────────────────────────────────────────────
 function renderPlayerView(assignment, game) {
   document.getElementById('pv-name').textContent = assignment.player;
   document.getElementById('pv-assassin').textContent = assignment.assassinCard;
-  document.getElementById('pv-game-code').textContent = game.gameCode || state.gameCode;
+  document.getElementById('pv-game-code').textContent = game.gameCode || G.gameCode;
   document.getElementById('pv-kill-points').textContent = assignment.killPoints;
+
   const statusEl = document.getElementById('pv-status');
   const assassCard = document.getElementById('pv-assassinate-card');
-  const rogueCard = document.getElementById('pv-rogue-card');
+  const rogueCard  = document.getElementById('pv-rogue-card');
   if (!assignment.alive) {
     statusEl.textContent = 'Eliminated'; statusEl.className = 'badge badge-danger';
     assassCard.style.display = 'none'; rogueCard.style.display = 'none';
@@ -536,100 +522,77 @@ function renderPlayerView(assignment, game) {
     statusEl.textContent = 'Alive'; statusEl.className = 'badge badge-success';
     rogueCard.style.display = 'none'; assassCard.style.display = '';
   }
-  const targetA = (game.assignments || state.assignments).find(a => a.player === assignment.targetPlayer);
+
+  const allAssignments = (game.assignments || G.assignments);
+  const targetA = allAssignments.find(a => a.player === assignment.targetPlayer);
   document.getElementById('pv-target').textContent = assignment.targetPlayer || '—';
   document.getElementById('pv-target-identity').textContent = targetA
     ? (!targetA.alive ? '💀 Already eliminated' : targetA.isRogue ? '⚠️ This player is Rogue' : '') : '';
-  document.getElementById('pv-kill-words').innerHTML = (assignment.killWords || []).map(w =>
+
+  document.getElementById('pv-kill-words').innerHTML = (assignment.killWords||[]).map(w =>
     `<div class="kw-pill"><span>🎯 "${esc(w)}"</span></div>`).join('');
   const sel = document.getElementById('pv-kill-word-used');
-  sel.innerHTML = (assignment.killWords || []).map(w => `<option value="${esc(w)}">${esc(w)}</option>`).join('');
+  sel.innerHTML = (assignment.killWords||[]).map(w => `<option value="${esc(w)}">${esc(w)}</option>`).join('');
 }
 
-function recordAssassination() {
-  const msg = document.getElementById('pv-assassinate-msg');
+async function recordAssassination() {
+  const msg      = document.getElementById('pv-assassinate-msg');
   const wordUsed = document.getElementById('pv-kill-word-used').value;
-  const code = document.getElementById('pv-game-code').textContent || state.gameCode;
-  const game = loadGame(code);
+  const code     = document.getElementById('pv-game-code').textContent || G.gameCode;
+  msg.textContent = 'Processing…';
+
+  const game = await dbLoad(code);
   if (!game) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not load game state.</span>'; return; }
-  const killerA = game.assignments.find(a => a.player === state.currentPlayerName);
+
+  const killerA = game.assignments.find(a => a.player === G.currentPlayerName);
   const victimA = game.assignments.find(a => a.player === killerA.targetPlayer);
   if (!victimA || !victimA.alive) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Target is already eliminated.</span>'; return; }
+
   const wasTargetingKiller = victimA.targetPlayer === killerA.player;
-  victimA.alive = false; killerA.killPoints += 1;
+  victimA.alive = false;
+  killerA.killPoints += 1;
   game.assassinations.push({ killer: killerA.player, victim: victimA.player, word: wordUsed });
+
   if (wasTargetingKiller) {
     killerA.isRogue = true;
     const remaining = game.assignments.filter(a => a.alive && a.player !== killerA.player);
-    killerA.rogueTarget = remaining.length ? remaining[Math.floor(Math.random() * remaining.length)].player : null;
-    killerA.killWords = victimA.killWords; killerA.targetPlayer = killerA.rogueTarget;
+    killerA.rogueTarget  = remaining.length ? remaining[Math.floor(Math.random()*remaining.length)].player : null;
+    killerA.killWords    = victimA.killWords;
+    killerA.targetPlayer = killerA.rogueTarget;
   } else {
-    killerA.targetPlayer = victimA.targetPlayer; killerA.killWords = victimA.killWords;
+    killerA.targetPlayer = victimA.targetPlayer;
+    killerA.killWords    = victimA.killWords;
   }
-  const aliveCount = game.assignments.filter(a => a.alive).length;
-  if (aliveCount <= 1 || killerA.isRogue) game.gameStarted = false;
-  state = { ...state, ...game };
-  saveGame(code, game);
+
+  if (game.assignments.filter(a=>a.alive).length <= 1 || killerA.isRogue) game.gameStarted = false;
+
+  await dbSave(code, game);
+  G = { ...G, ...game };
   renderPlayerView(killerA, game);
-  msg.innerHTML = `<span class="success-text">✅ ${esc(victimA.player)} eliminated! ${wasTargetingKiller ? '🔥 You are now Rogue!' : `New target: ${esc(killerA.targetPlayer || '—')}`}</span>`;
+  msg.innerHTML = `<span style="color:var(--color-success-text)">✅ ${esc(victimA.player)} eliminated! ${wasTargetingKiller ? '🔥 You are now Rogue!' : `New target: ${esc(killerA.targetPlayer||'—')}`}</span>`;
   if (!game.gameStarted) setTimeout(() => showGameOver(game), 1500);
 }
 
-async function refreshPlayerView() {
-  const code = state.gameCode; if (!code) return;
-  const game = loadGame(code); if (!game) return;
-  state = { ...state, ...game };
-  const assignment = game.assignments.find(a => a.player === state.currentPlayerName);
-  if (assignment) renderPlayerView(assignment, game);
-  if (!game.gameStarted && game.assassinations && game.assassinations.length > 0) showGameOver(game);
-}
-
-// ── Game Over ──────────────────────────────────────────────────────────────────
+// ── Game over ─────────────────────────────────────────────────────────────────
 function showGameOver(game) {
-  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-  const sorted = [...game.assignments].sort((a, b) => b.killPoints - a.killPoints);
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  const sorted = [...game.assignments].sort((a,b) => b.killPoints - a.killPoints);
   const maxPts = sorted[0].killPoints;
-  document.getElementById('final-standings').innerHTML = sorted.map((a, i) => `
+  document.getElementById('final-standings').innerHTML = sorted.map((a,i) => `
     <div class="player-row">
-      <div class="avatar">${i === 0 ? '🏆' : a.player[0]}</div>
-      <span style="flex:1;">${esc(a.player)}${a.isRogue ? ' 🔥' : ''}</span>
-      <span style="font-weight:${a.killPoints === maxPts ? '700' : '400'};">${a.killPoints} pts</span>
+      <div class="avatar">${i===0?'🏆':a.player[0]}</div>
+      <span style="flex:1;">${esc(a.player)}${a.isRogue?' 🔥':''}</span>
+      <span style="font-weight:${a.killPoints===maxPts?'700':'400'};">${a.killPoints} pts</span>
     </div>`).join('');
   showScreen('screen-gameover');
 }
 
-function endGame() {
-  if (!confirm('End the game now?')) return;
-  const game = loadGame(state.gameCode);
-  if (game) { game.gameStarted = false; saveGame(state.gameCode, game); }
-  showGameOver(game || { assignments: state.assignments });
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Polling ───────────────────────────────────────────────────────────────────
-function startPolling(code) {
-  if (pollInterval) clearInterval(pollInterval);
-  pollInterval = setInterval(() => {
-    const c = code || state.gameCode; if (!c) return;
-    const game = loadGame(c); if (!game) return;
-    state = { ...state, ...game };
-    if (state.isHost) renderHostGame();
-    else {
-      const a = game.assignments.find(a => a.player === state.currentPlayerName);
-      if (a) renderPlayerView(a, game);
-    }
-    if (!game.gameStarted && game.assassinations && game.assassinations.length > 0) {
-      clearInterval(pollInterval); pollInterval = null; showGameOver(game);
-    }
-  }, 4000);
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function esc(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Init ───────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 renderKillWords();
 renderPlayerList();
 </script>
