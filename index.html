@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Card Assassins</title>
+<title>Hit List</title>
 
 <!-- ═══════════════════════════════════════════════════════════════════════════
      FIREBASE SETUP — replace these values with your own Firebase project config
@@ -16,7 +16,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyAZiZ97nsD9YkTYbxK_Pfbfxlsy4d8zsC8",
   authDomain: "cardassassin-ca1ff.firebaseapp.com",
   databaseURL: "https://cardassassin-ca1ff-default-rtdb.firebaseio.com",
@@ -30,19 +30,12 @@
   const app = initializeApp(firebaseConfig);
   const db  = getDatabase(app);
 
-  // Expose DB helpers to the rest of the page
   window._db = {
-    save: (code, data) => set(ref(db, 'games/' + code), data),
-    load: async (code) => {
-      const snap = await get(ref(db, 'games/' + code));
-      return snap.exists() ? snap.val() : null;
-    },
-    watch: (code, cb) => onValue(ref(db, 'games/' + code), snap => {
-      if (snap.exists()) cb(snap.val());
-    })
+    save:  (code, data) => set(ref(db, 'games/' + code), data),
+    load:  async (code) => { const snap = await get(ref(db, 'games/' + code)); return snap.exists() ? snap.val() : null; },
+    watch: (code, cb)   => onValue(ref(db, 'games/' + code), snap => { if (snap.exists()) cb(snap.val()); })
   };
 
-  // Signal that Firebase is ready
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
 
@@ -76,7 +69,7 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 0.75rem; }
 input[type=text], select { width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; background: var(--color-bg); color: var(--color-text); margin-bottom: 0.5rem; outline: none; }
 input[type=text]:focus, select:focus { border-color: var(--color-text); }
 .btn { padding: 8px 18px; border-radius: var(--radius-md); cursor: pointer; font-size: 14px; font-weight: 500; border: none; font-family: inherit; }
-.btn-primary  { background: var(--color-text); color: var(--color-bg); }
+.btn-primary   { background: var(--color-text); color: var(--color-bg); }
 .btn-secondary { background: var(--color-bg-secondary); color: var(--color-text); border: 1px solid var(--color-border); }
 .btn-danger-outline { background: var(--color-danger-bg); color: var(--color-danger-text); border: 1px solid #fca5a5; }
 .btn-sm { padding: 5px 12px; font-size: 13px; }
@@ -100,6 +93,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 .upload-zone input[type=file] { display: none; }
 .secret-box { background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: 1.25rem; text-align: center; margin: 0.75rem 0; }
 .secret-box .big { font-size: 20px; font-weight: 600; margin: 0.5rem 0; }
+.secret-box .nickname { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
 .kw-pill { background: var(--color-bg-secondary); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin: 4px 0; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
 .game-code-display { font-size: 32px; font-weight: 700; letter-spacing: 5px; text-align: center; padding: 1rem; background: var(--color-bg-secondary); border-radius: var(--radius-md); margin: 0.5rem 0; }
 #firebase-banner { background: var(--color-warn-bg); color: var(--color-warn-text); border: 1px solid #fcd34d; border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; line-height: 1.5; }
@@ -108,18 +102,16 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 <body>
 <div id="app">
 
-  <!-- Firebase not configured warning -->
   <div id="firebase-banner" style="display:none;">
     ⚠️ <strong>Firebase not configured.</strong> Open this file and replace the <code>REPLACE_WITH_YOUR_*</code> values in the Firebase config at the top with your own project credentials.
-    See the comments in the HTML source for setup instructions.
   </div>
 
   <!-- HOME -->
   <div id="screen-home" class="screen active">
     <div style="text-align:center; padding:2.5rem 0 1.5rem;">
-      <div style="font-size:40px; margin-bottom:0.5rem;">🗡️</div>
-      <h2 style="font-size:24px; font-weight:700; margin-bottom:0.25rem;">Card Assassins</h2>
-      <p class="muted">Digital companion · Up to 12 players</p>
+      <div style="font-size:40px; margin-bottom:0.5rem;">🎯</div>
+      <h2 style="font-size:24px; font-weight:700; margin-bottom:0.25rem;">Hit List</h2>
+      <p class="muted">Da local word game · Up to 12 players</p>
     </div>
     <div class="btn-row" style="justify-content:center;">
       <button class="btn btn-primary" onclick="showScreen('screen-host-setup')">Host a game</button>
@@ -132,14 +124,14 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
   <div id="screen-host-setup" class="screen">
     <div class="tab-bar">
       <button class="tab active" onclick="switchTab('tab-players',this)">Players</button>
-      <button class="tab" onclick="switchTab('tab-killwords',this)">Kill words</button>
+      <button class="tab" onclick="switchTab('tab-killwords',this)">Hit words</button>
       <button class="tab" onclick="switchTab('tab-settings',this)">Settings</button>
     </div>
 
     <div id="tab-players">
       <div class="card">
         <h3>Add players</h3>
-        <p class="muted" style="margin-bottom:0.75rem;">Add each player by name. They'll join using the game code.</p>
+        <p class="muted" style="margin-bottom:0.75rem;">Add each player by name. They'll join using the game code. Each player gets a random local nickname when the game starts.</p>
         <input type="text" id="player-name-input" placeholder="Player name" onkeydown="if(event.key==='Enter')addPlayer()" />
         <button class="btn btn-primary btn-sm" onclick="addPlayer()">+ Add</button>
         <div id="player-error" class="error-msg"></div>
@@ -149,8 +141,8 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 
     <div id="tab-killwords" class="hidden">
       <div class="card">
-        <h3>Kill word list</h3>
-        <p class="muted" style="margin-bottom:0.75rem;">Upload a file, add manually, or use the defaults. One word or phrase per line in the text file.</p>
+        <h3>Hit word list</h3>
+        <p class="muted" style="margin-bottom:0.75rem;">Each player gets hit words drawn from this pool. Defaults are Pidgin — upload a file or add your own.</p>
         <div class="upload-zone" onclick="document.getElementById('kw-file').click()">
           <div style="font-size:28px; margin-bottom:6px;">📄</div>
           <p style="font-size:14px; font-weight:500; margin-bottom:2px;">Upload a text file</p>
@@ -170,24 +162,19 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
         </div>
         <div id="kw-tags"></div>
         <div class="divider"></div>
-        <p class="muted" style="font-size:12px;">💡 Common words that come up naturally in conversation make the best kill words.</p>
+        <p class="muted" style="font-size:12px;">💡 Words that come up naturally in conversation are the sneakiest.</p>
       </div>
     </div>
 
     <div id="tab-settings" class="hidden">
       <div class="card">
         <h3>Game settings</h3>
-        <label class="muted" style="display:block; margin-bottom:4px;">Kill words per player</label>
-        <select id="kw-per-player" style="margin-bottom:1rem;">
+        <label class="muted" style="display:block; margin-bottom:4px;">Hit words per player</label>
+        <select id="kw-per-player">
           <option value="2">2 words</option>
           <option value="3" selected>3 words (default)</option>
           <option value="4">4 words</option>
           <option value="5">5 words</option>
-        </select>
-        <label class="muted" style="display:block; margin-bottom:4px;">Card style</label>
-        <select id="assassin-style">
-          <option value="Dagger">Dagger</option>
-          <option value="Poison">Poison</option>
         </select>
       </div>
     </div>
@@ -213,8 +200,8 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <div id="host-player-list"></div>
     </div>
     <div class="card">
-      <h3>Assassination log</h3>
-      <div id="assassination-log" class="muted" style="font-size:13px;">No assassinations yet.</div>
+      <h3>Hit log</h3>
+      <div id="assassination-log" class="muted" style="font-size:13px;">No hits yet.</div>
     </div>
   </div>
 
@@ -241,34 +228,35 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <span id="pv-status" class="badge badge-success">Alive</span>
     </div>
     <div class="card">
-      <p class="muted" style="font-size:12px; margin-bottom:4px;">Your assassin identity</p>
+      <p class="muted" style="font-size:12px; margin-bottom:4px;">Your identity</p>
       <div class="secret-box">
-        <div class="muted" style="font-size:12px;">Assassin</div>
+        <div class="muted" style="font-size:12px;">Known as</div>
         <div class="big" id="pv-assassin"></div>
+        <div class="nickname" id="pv-nickname"></div>
       </div>
     </div>
     <div class="card">
       <p class="muted" style="font-size:12px; margin-bottom:4px;">Your target</p>
       <div class="secret-box">
-        <div class="muted" style="font-size:12px;">Target</div>
+        <div class="muted" style="font-size:12px;">Get this person to say your hit words</div>
         <div class="big" id="pv-target"></div>
         <div id="pv-target-identity" class="muted" style="font-size:12px; margin-top:4px;"></div>
       </div>
     </div>
     <div class="card">
-      <p class="muted" style="font-size:12px; margin-bottom:0.5rem;">Your kill words — get your target to say one!</p>
+      <p class="muted" style="font-size:12px; margin-bottom:0.5rem;">Your hit words — get your target to say one!</p>
       <div id="pv-kill-words"></div>
     </div>
     <div class="card" id="pv-assassinate-card">
-      <h3>Make an assassination</h3>
-      <p class="muted" style="font-size:13px; margin-bottom:0.75rem;">Got your target to say a kill word? Yell "ASSASSINATED!" then record it here.</p>
+      <h3>Call the hit</h3>
+      <p class="muted" style="font-size:13px; margin-bottom:0.75rem;">Got your target to say a hit word? Yell "ASSASSINATED!" then record it here.</p>
       <select id="pv-kill-word-used" style="margin-bottom:0.75rem;"></select>
-      <button class="btn" onclick="recordAssassination()" style="width:100%; background:var(--color-danger-bg); color:var(--color-danger-text); border:1px solid #fca5a5; font-weight:600;">🗡️ Assassinate!</button>
+      <button class="btn" onclick="recordAssassination()" style="width:100%; background:var(--color-danger-bg); color:var(--color-danger-text); border:1px solid #fca5a5; font-weight:600;">🎯 Call the hit!</button>
       <div id="pv-assassinate-msg" style="margin-top:8px; font-size:13px; min-height:18px;"></div>
     </div>
     <div class="card" id="pv-rogue-card" style="display:none;">
-      <h3>🔥 You are Rogue</h3>
-      <p class="muted" style="font-size:13px; margin-bottom:0.5rem;">You eliminated the player targeting you. You can now target anyone — but anyone can target you. Stay quiet!</p>
+      <h3>🔥 You went rogue!</h3>
+      <p class="muted" style="font-size:13px; margin-bottom:0.5rem;">You got the person who was targeting you. Now you can go after anyone — but anyone can come after you too. Keep low!</p>
       <div id="pv-rogue-target"></div>
     </div>
     <div class="card">
@@ -287,7 +275,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
   <div id="screen-gameover" class="screen">
     <div style="text-align:center; padding:2rem 0 1rem;">
       <div style="font-size:48px;">🏆</div>
-      <h2 style="font-size:24px; margin:0.5rem 0;">Game over</h2>
+      <h2 style="font-size:24px; margin:0.5rem 0;">Pau already!</h2>
     </div>
     <div class="card">
       <h3>Final standings</h3>
@@ -301,46 +289,62 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 </div><!-- #app -->
 
 <script>
-// ── Defaults ──────────────────────────────────────────────────────────────────
+// ── Pidgin default hit words ──────────────────────────────────────────────────
 const DEFAULT_KILL_WORDS = [
-  "actually","absolutely","amazing","awesome","basically","beautiful","certainly",
-  "clearly","cool","definitely","exactly","fantastic","fine","great","honestly",
-  "interesting","kind of","literally","nice","obviously","okay","perfect","pretty",
-  "probably","really","right","seriously","sorry","sure","terrible","totally",
-  "wonderful","yeah","yes","you know","like","wait","what","no","whatever","fair enough"
+  "howzit","shoots","brah","braddah","sistah","cuz","eh","ho","da kine","mean",
+  "cherry","solid","garans","rajah","unreal","fo real","small kine","any kine",
+  "bumbye","talk story","pau","pau hana","aloha","mahalo","cheehoo","keiki",
+  "auntie","uncle","kupuna","haole","hapa","local","moke","tita","grinds","ono",
+  "broke da mouth","musubi","saimin","shave ice","poke","poi","plate lunch",
+  "mixed plate","choke","stay","get","make","no can","can","try","lidat",
+  "holo holo","cruise","jam","beef","bus up","talk stink","jack up","lolo",
+  "huhu","pilau","kolohe","hemajang","kapakahi","hammah","buggah","raggedy",
+  "shame","stink eye","chicken skin","mauka","makai","windward","leeward",
+  "town","mainland","da bus","jam up","long time","all pau","pau already",
+  "right on","was good","good yeah","no act","no worry","we go","try come",
+  "ho brah","choke people","choke fun","choke food","choke traffic","plenny",
+  "wikiwiki","hiki no","a hui hou","slippah","beach day","potluck",
+  "kanak attack","lucky you live hawaii","lucky we live hawaii","all good",
+  "no worries","shoots den","we stay cruise","howzit going","where you stay"
 ];
 
+// ── Local nicknames pool ──────────────────────────────────────────────────────
+const NICKNAMES = [
+  "Da Moke", "Big Aunty", "Bruddah Bear", "Sistah Stink Eye", "Da Kine Guy",
+  "Uncle Hammah", "Tita Trouble", "Choke Check", "Da Buggah", "Slippah Thief",
+  "Plate Lunch King", "Shave Ice Queen", "Kolohe Kid", "Kapakahi Krew",
+  "Musubi Mob", "Poke Boss", "Talk Story Pro", "Pau Hana Posse",
+  "Da Lolo", "Chicken Skin Crew", "Stink Eye Specialist", "Cheehoo Charlie",
+  "Mauka Mike", "Makai Marcy", "Wikiwiki Wayne", "Kanak Attack Karen",
+  "Holo Holo Hank", "Rubbah Slippah Ronny", "Beef King Benny",
+  "Hurricane Harriet", "Saimin Sally", "Malasada Mike", "Crack Seed Carl",
+  "Li Hing Lou", "Mochi Mona", "Bento Betty", "Manapua Max",
+  "Da Real Kine", "Numbah One Nalu", "Tight Tina", "Mint Condition Maka",
+  "Slow Poke Sam", "Cut Off Calvin", "Traffic Tammy", "West Side Wally",
+  "Neighbor Island Nancy", "Windward Wren", "Leeward Larry"
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
 let G = {
   players: [], killWords: [...DEFAULT_KILL_WORDS], kwPerPlayer: 3,
-  assassinStyle: 'Dagger', gameCode: null, assignments: [],
-  assassinations: [], currentPlayerName: null, isHost: false
+  gameCode: null, assignments: [], assassinations: [],
+  currentPlayerName: null, isHost: false
 };
+let unsubscribe = null;
 
-let unsubscribe = null; // Firebase real-time listener handle
-
-// ── Firebase readiness ────────────────────────────────────────────────────────
+// ── Firebase ──────────────────────────────────────────────────────────────────
 let firebaseReady = false;
 window.addEventListener('firebase-ready', () => {
   firebaseReady = true;
-  // Show warning if config was not filled in
-  if (document.querySelector('script[type=module]').textContent.includes('REPLACE_WITH_YOUR_API_KEY')) {
+  const scriptText = document.querySelector('script[type=module]').textContent;
+  if (scriptText.includes('REPLACE_WITH_YOUR_API_KEY')) {
     document.getElementById('firebase-banner').style.display = 'block';
   }
 });
 
-async function dbSave(code, data) {
-  if (!firebaseReady) { console.error('Firebase not ready'); return; }
-  await window._db.save(code, data);
-}
-async function dbLoad(code) {
-  if (!firebaseReady) return null;
-  return await window._db.load(code);
-}
-function dbWatch(code, cb) {
-  if (!firebaseReady) return;
-  if (unsubscribe) unsubscribe();
-  unsubscribe = window._db.watch(code, cb);
-}
+async function dbSave(code, data) { if (firebaseReady) await window._db.save(code, data); }
+async function dbLoad(code)       { return firebaseReady ? await window._db.load(code) : null; }
+function  dbWatch(code, cb)       { if (!firebaseReady) return; if (unsubscribe) unsubscribe(); unsubscribe = window._db.watch(code, cb); }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -358,8 +362,8 @@ function switchTab(id, btn) {
 // ── Players ───────────────────────────────────────────────────────────────────
 function addPlayer() {
   const input = document.getElementById('player-name-input');
-  const name = input.value.trim();
-  const err = document.getElementById('player-error');
+  const name  = input.value.trim();
+  const err   = document.getElementById('player-error');
   if (!name) { err.textContent = 'Enter a name.'; return; }
   if (G.players.find(p => p.toLowerCase() === name.toLowerCase())) { err.textContent = 'Name already added.'; return; }
   if (G.players.length >= 12) { err.textContent = 'Max 12 players.'; return; }
@@ -378,15 +382,15 @@ function renderPlayerList() {
     </div>`).join('');
 }
 
-// ── Kill words ────────────────────────────────────────────────────────────────
+// ── Hit words ─────────────────────────────────────────────────────────────────
 function handleFileUpload(e) {
   const file = e.target.files[0]; if (!file) return;
   const msgEl = document.getElementById('import-msg');
   const reader = new FileReader();
   reader.onload = ev => {
     const words = ev.target.result.split(/\r?\n/).map(l => l.trim().toLowerCase()).filter(Boolean);
-    const dupes = words.filter(w => G.killWords.includes(w));
-    const fresh = words.filter(w => !G.killWords.includes(w));
+    const dupes  = words.filter(w => G.killWords.includes(w));
+    const fresh  = words.filter(w => !G.killWords.includes(w));
     G.killWords.push(...fresh); renderKillWords();
     msgEl.innerHTML = `<span style="color:var(--color-success-text)">✅ Imported ${fresh.length} word${fresh.length!==1?'s':''}${dupes.length?` (${dupes.length} duplicate${dupes.length!==1?'s':''} skipped)`:''}.</span>`;
     e.target.value = '';
@@ -396,14 +400,14 @@ function handleFileUpload(e) {
 }
 function addKillWord() {
   const input = document.getElementById('kw-input');
-  const word = input.value.trim().toLowerCase();
-  const err = document.getElementById('kw-error');
+  const word  = input.value.trim().toLowerCase();
+  const err   = document.getElementById('kw-error');
   if (!word) { err.textContent = 'Enter a word.'; return; }
   if (G.killWords.includes(word)) { err.textContent = 'Already in list.'; return; }
   err.textContent = ''; G.killWords.push(word); input.value = ''; renderKillWords();
 }
 function removeKillWord(word) { G.killWords = G.killWords.filter(w => w !== word); renderKillWords(); }
-function clearAllWords() { if (confirm('Clear all kill words?')) { G.killWords = []; renderKillWords(); } }
+function clearAllWords()      { if (confirm('Clear all hit words?')) { G.killWords = []; renderKillWords(); } }
 function renderKillWords() {
   document.getElementById('kw-count').textContent = G.killWords.length + ' words in pool';
   document.getElementById('kw-tags').innerHTML = G.killWords.map(w =>
@@ -413,28 +417,38 @@ function renderKillWords() {
 
 // ── Game start ────────────────────────────────────────────────────────────────
 function shuffle(arr) {
-  const a=[...arr];
-  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a;
 }
 function generateCode() {
-  const w=['WOLF','HAWK','VIPER','BLADE','GHOST','SHADOW','RAVEN','STORM','COBRA','DUSK','IRON','ECHO'];
-  return w[Math.floor(Math.random()*w.length)]+Math.floor(Math.random()*90+10);
+  const w = ['WOLF','HAWK','VIPER','BLADE','GHOST','SHADOW','RAVEN','STORM','COBRA','DUSK','IRON','ECHO'];
+  return w[Math.floor(Math.random()*w.length)] + Math.floor(Math.random()*90+10);
+}
+function assignNicknames(players) {
+  const pool = shuffle([...NICKNAMES]);
+  const result = {};
+  players.forEach((p, i) => { result[p] = pool[i % pool.length]; });
+  return result;
 }
 
 async function startGame() {
-  if (!firebaseReady) { alert('Firebase is not configured yet. See the banner at the top of the page for setup instructions.'); return; }
+  if (!firebaseReady) { alert('Firebase is not configured yet. See the banner at the top for setup instructions.'); return; }
   G.kwPerPlayer = parseInt(document.getElementById('kw-per-player').value);
-  G.assassinStyle = document.getElementById('assassin-style').value;
   if (G.players.length < 2) { alert('Add at least 2 players.'); return; }
   const minWords = G.players.length * G.kwPerPlayer;
-  if (G.killWords.length < minWords) { alert(`Need at least ${minWords} kill words (${G.players.length} players × ${G.kwPerPlayer}). Add more or reduce words per player.`); return; }
+  if (G.killWords.length < minWords) {
+    alert(`Need at least ${minWords} hit words (${G.players.length} players × ${G.kwPerPlayer}). Add more or reduce words per player.`); return;
+  }
 
   G.gameCode = generateCode(); G.isHost = true;
-  const sp = shuffle(G.players), sw = shuffle(G.killWords);
+  const sp = shuffle(G.players);
+  const sw = shuffle(G.killWords);
+  const nicknames = assignNicknames(sp);
+
   G.assignments = sp.map((player, i) => ({
     player,
-    assassinCard: G.assassinStyle + ' ' + player,
+    nickname: nicknames[player],
     targetPlayer: sp[(i+1) % sp.length],
     killWords: sw.slice(i * G.kwPerPlayer, i * G.kwPerPlayer + G.kwPerPlayer),
     killPoints: 0, alive: true, isRogue: false, rogueTarget: null
@@ -445,9 +459,10 @@ async function startGame() {
   await dbSave(G.gameCode, payload);
   renderHostGame(G);
   showScreen('screen-host-game');
-
-  // Real-time updates for host
-  dbWatch(G.gameCode, game => { Object.assign(G, game); renderHostGame(game); if (!game.gameStarted && game.assassinations && game.assassinations.length) showGameOver(game); });
+  dbWatch(G.gameCode, game => {
+    Object.assign(G, game); renderHostGame(game);
+    if (!game.gameStarted && game.assassinations && game.assassinations.length) showGameOver(game);
+  });
 }
 
 // ── Host view ─────────────────────────────────────────────────────────────────
@@ -457,14 +472,17 @@ function renderHostGame(game) {
   document.getElementById('host-player-list').innerHTML = game.assignments.map(a => `
     <div class="player-row">
       <div class="avatar ${!a.alive?'dead':a.isRogue?'rogue':''}">${a.player[0]}</div>
-      <span style="flex:1;">${esc(a.player)}</span>
+      <div style="flex:1;">
+        <div>${esc(a.player)}</div>
+        <div class="muted" style="font-size:12px;">${esc(a.nickname)}</div>
+      </div>
       <span style="font-size:12px;color:var(--color-text-secondary);margin-right:8px;">${a.killPoints} pts</span>
       ${!a.alive?'<span class="badge badge-danger">Eliminated</span>':a.isRogue?'<span class="badge badge-warn">Rogue</span>':'<span class="badge badge-success">Alive</span>'}
     </div>`).join('');
   const log = document.getElementById('assassination-log');
   log.innerHTML = (game.assassinations||[]).length
-    ? game.assassinations.map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--color-border);">🗡️ <strong>${esc(e.killer)}</strong> eliminated <strong>${esc(e.victim)}</strong> with "<em>${esc(e.word)}</em>"</div>`).join('')
-    : '<span class="muted">No assassinations yet.</span>';
+    ? game.assassinations.map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--color-border);">🎯 <strong>${esc(e.killer)}</strong> got <strong>${esc(e.victim)}</strong> with "<em>${esc(e.word)}</em>"</div>`).join('')
+    : '<span class="muted">No hits yet.</span>';
 }
 
 async function endGame() {
@@ -489,8 +507,6 @@ async function joinGame() {
   G = { ...G, ...game, currentPlayerName: assignment.player, isHost: false };
   renderPlayerView(assignment, game);
   showScreen('screen-player-view');
-
-  // Real-time updates for player
   dbWatch(code, updatedGame => {
     G = { ...G, ...updatedGame };
     const a = updatedGame.assignments.find(a => a.player === G.currentPlayerName);
@@ -502,13 +518,15 @@ async function joinGame() {
 // ── Player view ───────────────────────────────────────────────────────────────
 function renderPlayerView(assignment, game) {
   document.getElementById('pv-name').textContent = assignment.player;
-  document.getElementById('pv-assassin').textContent = assignment.assassinCard;
+  document.getElementById('pv-assassin').textContent = assignment.player;
+  document.getElementById('pv-nickname').textContent = '🤙 aka ' + assignment.nickname;
   document.getElementById('pv-game-code').textContent = game.gameCode || G.gameCode;
   document.getElementById('pv-kill-points').textContent = assignment.killPoints;
 
-  const statusEl = document.getElementById('pv-status');
+  const statusEl  = document.getElementById('pv-status');
   const assassCard = document.getElementById('pv-assassinate-card');
   const rogueCard  = document.getElementById('pv-rogue-card');
+
   if (!assignment.alive) {
     statusEl.textContent = 'Eliminated'; statusEl.className = 'badge badge-danger';
     assassCard.style.display = 'none'; rogueCard.style.display = 'none';
@@ -523,11 +541,11 @@ function renderPlayerView(assignment, game) {
     rogueCard.style.display = 'none'; assassCard.style.display = '';
   }
 
-  const allAssignments = (game.assignments || G.assignments);
-  const targetA = allAssignments.find(a => a.player === assignment.targetPlayer);
+  const allA   = (game.assignments || G.assignments);
+  const targetA = allA.find(a => a.player === assignment.targetPlayer);
   document.getElementById('pv-target').textContent = assignment.targetPlayer || '—';
   document.getElementById('pv-target-identity').textContent = targetA
-    ? (!targetA.alive ? '💀 Already eliminated' : targetA.isRogue ? '⚠️ This player is Rogue' : '') : '';
+    ? (!targetA.alive ? '💀 Already eliminated' : targetA.isRogue ? '⚠️ This player went rogue' : '') : '';
 
   document.getElementById('pv-kill-words').innerHTML = (assignment.killWords||[]).map(w =>
     `<div class="kw-pill"><span>🎯 "${esc(w)}"</span></div>`).join('');
@@ -569,7 +587,7 @@ async function recordAssassination() {
   await dbSave(code, game);
   G = { ...G, ...game };
   renderPlayerView(killerA, game);
-  msg.innerHTML = `<span style="color:var(--color-success-text)">✅ ${esc(victimA.player)} eliminated! ${wasTargetingKiller ? '🔥 You are now Rogue!' : `New target: ${esc(killerA.targetPlayer||'—')}`}</span>`;
+  msg.innerHTML = `<span style="color:var(--color-success-text)">✅ ${esc(victimA.player)} pau! ${wasTargetingKiller ? '🔥 You went rogue!' : `New target: ${esc(killerA.targetPlayer||'—')}`}</span>`;
   if (!game.gameStarted) setTimeout(() => showGameOver(game), 1500);
 }
 
@@ -581,7 +599,10 @@ function showGameOver(game) {
   document.getElementById('final-standings').innerHTML = sorted.map((a,i) => `
     <div class="player-row">
       <div class="avatar">${i===0?'🏆':a.player[0]}</div>
-      <span style="flex:1;">${esc(a.player)}${a.isRogue?' 🔥':''}</span>
+      <div style="flex:1;">
+        <div>${esc(a.player)}${a.isRogue?' 🔥':''}</div>
+        <div class="muted" style="font-size:12px;">${esc(a.nickname)}</div>
+      </div>
       <span style="font-weight:${a.killPoints===maxPts?'700':'400'};">${a.killPoints} pts</span>
     </div>`).join('');
   showScreen('screen-gameover');
