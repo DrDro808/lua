@@ -16,15 +16,14 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAZiZ97nsD9YkTYbxK_Pfbfxlsy4d8zsC8",
-  authDomain: "cardassassin-ca1ff.firebaseapp.com",
-  databaseURL: "https://cardassassin-ca1ff-default-rtdb.firebaseio.com",
-  projectId: "cardassassin-ca1ff",
-  storageBucket: "cardassassin-ca1ff.firebasestorage.app",
-  messagingSenderId: "769140313338",
-  appId: "1:769140313338:web:930a779fb24c981d3f0d43",
-  measurementId: "G-0VBV2RQX6Q"
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAZiZ97nsD9YkTYbxK_Pfbfxlsy4d8zsC8",
+    authDomain:        "cardassassin-ca1ff.firebaseapp.com",
+    databaseURL:       "https://cardassassin-ca1ff-default-rtdb.firebaseio.com",
+    projectId:         "cardassassin-ca1ff",
+    storageBucket:     "cardassassin-ca1ff.firebasestorage.app",
+    messagingSenderId: "769140313338",
+    appId:             "1:769140313338:web:930a779fb24c981d3f0d43"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -101,10 +100,6 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 </head>
 <body>
 <div id="app">
-
-  <div id="firebase-banner" style="display:none;">
-    ⚠️ <strong>Firebase not configured.</strong> Open this file and replace the <code>REPLACE_WITH_YOUR_*</code> values in the Firebase config at the top with your own project credentials.
-  </div>
 
   <!-- HOME -->
   <div id="screen-home" class="screen active">
@@ -240,6 +235,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <div class="secret-box">
         <div class="muted" style="font-size:12px;">Get this person to say your hit words</div>
         <div class="big" id="pv-target"></div>
+        <div id="pv-target-nickname" class="nickname" style="font-size:13px; color:var(--color-text-secondary);"></div>
         <div id="pv-target-identity" class="muted" style="font-size:12px; margin-top:4px;"></div>
       </div>
     </div>
@@ -334,13 +330,7 @@ let unsubscribe = null;
 
 // ── Firebase ──────────────────────────────────────────────────────────────────
 let firebaseReady = false;
-window.addEventListener('firebase-ready', () => {
-  firebaseReady = true;
-  const scriptText = document.querySelector('script[type=module]').textContent;
-  if (scriptText.includes('REPLACE_WITH_YOUR_API_KEY')) {
-    document.getElementById('firebase-banner').style.display = 'block';
-  }
-});
+window.addEventListener('firebase-ready', () => { firebaseReady = true; });
 
 async function dbSave(code, data) { if (firebaseReady) await window._db.save(code, data); }
 async function dbLoad(code)       { return firebaseReady ? await window._db.load(code) : null; }
@@ -544,6 +534,7 @@ function renderPlayerView(assignment, game) {
   const allA   = (game.assignments || G.assignments);
   const targetA = allA.find(a => a.player === assignment.targetPlayer);
   document.getElementById('pv-target').textContent = assignment.targetPlayer || '—';
+  document.getElementById('pv-target-nickname').textContent = targetA ? '🤙 aka ' + targetA.nickname : '';
   document.getElementById('pv-target-identity').textContent = targetA
     ? (!targetA.alive ? '💀 Already eliminated' : targetA.isRogue ? '⚠️ This player went rogue' : '') : '';
 
