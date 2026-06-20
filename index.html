@@ -5,13 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Hit List</title>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════
-     FIREBASE SETUP — replace these values with your own Firebase project config
-     1. Go to https://console.firebase.google.com
-     2. Create a project → Add app → Web
-     3. Copy the firebaseConfig values below
-     4. In Firebase console: Build → Realtime Database → Create database (test mode)
-  ════════════════════════════════════════════════════════════════════════════ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -51,6 +44,8 @@
   --color-success-bg: #f0fff4;  --color-success-text: #1a7f3c;
   --color-warn-bg: #fff8e1;     --color-warn-text: #b45309;
   --color-info-bg: #eff6ff;     --color-info-text: #1d4ed8;
+  --color-purple-bg: #f5f0ff;   --color-purple-text: #6d28d9;
+  --color-teal-bg: #f0fdfa;     --color-teal-text: #0f766e;
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
 }
 body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); font-size: 15px; min-height: 100vh; }
@@ -60,11 +55,15 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 0.75rem; }
 .screen { display: none; padding-top: 0.5rem; }
 .screen.active { display: block; }
 .card { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.card-bounty { border-color: #c4b5fd; background: var(--color-purple-bg); }
+.card-mission { border-color: #5eead4; background: var(--color-teal-bg); }
 .badge { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 600; }
-.badge-danger  { background: var(--color-danger-bg);  color: var(--color-danger-text); }
-.badge-success { background: var(--color-success-bg); color: var(--color-success-text); }
-.badge-warn    { background: var(--color-warn-bg);    color: var(--color-warn-text); }
-.badge-info    { background: var(--color-info-bg);    color: var(--color-info-text); }
+.badge-danger   { background: var(--color-danger-bg);  color: var(--color-danger-text); }
+.badge-success  { background: var(--color-success-bg); color: var(--color-success-text); }
+.badge-warn     { background: var(--color-warn-bg);    color: var(--color-warn-text); }
+.badge-info     { background: var(--color-info-bg);    color: var(--color-info-text); }
+.badge-bounty   { background: var(--color-purple-bg);  color: var(--color-purple-text); }
+.badge-mission  { background: var(--color-teal-bg);    color: var(--color-teal-text); }
 input[type=text], select { width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; background: var(--color-bg); color: var(--color-text); margin-bottom: 0.5rem; outline: none; }
 input[type=text]:focus, select:focus { border-color: var(--color-text); }
 .btn { padding: 8px 18px; border-radius: var(--radius-md); cursor: pointer; font-size: 14px; font-weight: 500; border: none; font-family: inherit; }
@@ -84,7 +83,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 .error-msg { color: var(--color-danger-text); font-size: 13px; margin-top: 4px; min-height: 18px; }
 .divider { border: none; border-top: 1px solid var(--color-border); margin: 1rem 0; }
 .tab-bar { display: flex; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); }
-.tab { padding: 8px 16px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--color-text-secondary); background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; font-weight: 500; }
+.tab { padding: 8px 14px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--color-text-secondary); background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; font-weight: 500; }
 .tab.active { color: var(--color-text); border-bottom: 2px solid var(--color-text); }
 .hidden { display: none !important; }
 .upload-zone { border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center; cursor: pointer; transition: background 0.15s; margin-bottom: 0.75rem; }
@@ -92,10 +91,22 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 .upload-zone input[type=file] { display: none; }
 .secret-box { background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: 1.25rem; text-align: center; margin: 0.75rem 0; }
 .secret-box .big { font-size: 20px; font-weight: 600; margin: 0.5rem 0; }
-.secret-box .nickname { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
 .kw-pill { background: var(--color-bg-secondary); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin: 4px 0; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.bonus-pill { border-radius: var(--radius-sm); padding: 0.75rem; margin: 6px 0; font-size: 13px; line-height: 1.5; }
+.bonus-pill.bounty  { background: var(--color-purple-bg); border: 1px solid #c4b5fd; }
+.bonus-pill.mission { background: var(--color-teal-bg);   border: 1px solid #5eead4; }
+.bonus-pill .bonus-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+.bonus-pill.bounty  .bonus-label { color: var(--color-purple-text); }
+.bonus-pill.mission .bonus-label { color: var(--color-teal-text); }
+.bonus-pill .bonus-pts { font-size: 11px; font-weight: 600; float: right; }
+.bonus-pill.bounty  .bonus-pts { color: var(--color-purple-text); }
+.bonus-pill.mission .bonus-pts { color: var(--color-teal-text); }
+.bonus-pill .bonus-text { color: var(--color-text); }
+.complete-btn { font-size: 12px; margin-top: 6px; padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit; font-weight: 500; border: none; }
+.bounty-complete-btn  { background: var(--color-purple-bg); color: var(--color-purple-text); border: 1px solid #c4b5fd; }
+.mission-complete-btn { background: var(--color-teal-bg);   color: var(--color-teal-text);   border: 1px solid #5eead4; }
 .game-code-display { font-size: 32px; font-weight: 700; letter-spacing: 5px; text-align: center; padding: 1rem; background: var(--color-bg-secondary); border-radius: var(--radius-md); margin: 0.5rem 0; }
-#firebase-banner { background: var(--color-warn-bg); color: var(--color-warn-text); border: 1px solid #fcd34d; border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 13px; line-height: 1.5; }
+.strikethrough { text-decoration: line-through; opacity: 0.5; }
 </style>
 </head>
 <body>
@@ -126,7 +137,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
     <div id="tab-players">
       <div class="card">
         <h3>Add players</h3>
-        <p class="muted" style="margin-bottom:0.75rem;">Add each player by name. They'll join using the game code. Each player gets a random local nickname when the game starts.</p>
+        <p class="muted" style="margin-bottom:0.75rem;">Add each player by name. Each player gets a random nickname, a secret bounty challenge, and a secret mission when the game starts.</p>
         <input type="text" id="player-name-input" placeholder="Player name" onkeydown="if(event.key==='Enter')addPlayer()" />
         <button class="btn btn-primary btn-sm" onclick="addPlayer()">+ Add</button>
         <div id="player-error" class="error-msg"></div>
@@ -222,27 +233,57 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <h2 style="margin:0;" id="pv-name"></h2>
       <span id="pv-status" class="badge badge-success">Alive</span>
     </div>
+
+    <!-- Identity -->
     <div class="card">
       <p class="muted" style="font-size:12px; margin-bottom:4px;">Your identity</p>
       <div class="secret-box">
         <div class="muted" style="font-size:12px;">Known as</div>
         <div class="big" id="pv-assassin"></div>
-        <div class="nickname" id="pv-nickname"></div>
+        <div style="font-size:13px; color:var(--color-text-secondary); margin-top:2px;" id="pv-nickname"></div>
       </div>
     </div>
+
+    <!-- Target -->
     <div class="card">
       <p class="muted" style="font-size:12px; margin-bottom:4px;">Your target</p>
       <div class="secret-box">
         <div class="muted" style="font-size:12px;">Get this person to say your hit words</div>
         <div class="big" id="pv-target"></div>
-        <div id="pv-target-nickname" class="nickname" style="font-size:13px; color:var(--color-text-secondary);"></div>
+        <div style="font-size:13px; color:var(--color-text-secondary);" id="pv-target-nickname"></div>
         <div id="pv-target-identity" class="muted" style="font-size:12px; margin-top:4px;"></div>
       </div>
     </div>
+
+    <!-- Hit words -->
     <div class="card">
       <p class="muted" style="font-size:12px; margin-bottom:0.5rem;">Your hit words — get your target to say one!</p>
       <div id="pv-kill-words"></div>
     </div>
+
+    <!-- Secret bounty -->
+    <div class="card card-bounty">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <h3 style="margin:0; color:var(--color-purple-text);">💜 Secret Bounty</h3>
+        <span class="badge badge-bounty">+2 pts</span>
+      </div>
+      <p class="muted" style="font-size:12px; margin-bottom:0.75rem;">Make your hit happen under these conditions for bonus points. Honor system — only claim if legit!</p>
+      <div id="pv-bounty"></div>
+      <button id="pv-bounty-btn" class="complete-btn bounty-complete-btn" onclick="claimBonus('bounty')" style="margin-top:8px;">✓ Claim bounty (+2 pts)</button>
+    </div>
+
+    <!-- Secret mission -->
+    <div class="card card-mission">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <h3 style="margin:0; color:var(--color-teal-text);">🌊 Secret Mission</h3>
+        <span class="badge badge-mission">+2 pts</span>
+      </div>
+      <p class="muted" style="font-size:12px; margin-bottom:0.75rem;">Get your target to perform this action before you eliminate them. Can be done any time — not just at the moment of the hit.</p>
+      <div id="pv-mission"></div>
+      <button id="pv-mission-btn" class="complete-btn mission-complete-btn" onclick="claimBonus('mission')" style="margin-top:8px;">✓ Claim mission (+2 pts)</button>
+    </div>
+
+    <!-- Call the hit -->
     <div class="card" id="pv-assassinate-card">
       <h3>Call the hit</h3>
       <p class="muted" style="font-size:13px; margin-bottom:0.75rem;">Got your target to say a hit word? Yell "ASSASSINATED!" then record it here.</p>
@@ -250,11 +291,15 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <button class="btn" onclick="recordAssassination()" style="width:100%; background:var(--color-danger-bg); color:var(--color-danger-text); border:1px solid #fca5a5; font-weight:600;">🎯 Call the hit!</button>
       <div id="pv-assassinate-msg" style="margin-top:8px; font-size:13px; min-height:18px;"></div>
     </div>
+
+    <!-- Rogue -->
     <div class="card" id="pv-rogue-card" style="display:none;">
       <h3>🔥 You went rogue!</h3>
       <p class="muted" style="font-size:13px; margin-bottom:0.5rem;">You got the person who was targeting you. Now you can go after anyone — but anyone can come after you too. Keep low!</p>
       <div id="pv-rogue-target"></div>
     </div>
+
+    <!-- Stats -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
         <span class="muted">Kill points</span>
@@ -304,7 +349,7 @@ const DEFAULT_KILL_WORDS = [
   "no worries","shoots den","we stay cruise","howzit going","where you stay"
 ];
 
-// ── Local nicknames pool ──────────────────────────────────────────────────────
+// ── Local nicknames ───────────────────────────────────────────────────────────
 const NICKNAMES = [
   "Da Moke", "Big Aunty", "Bruddah Bear", "Sistah Stink Eye", "Da Kine Guy",
   "Uncle Hammah", "Tita Trouble", "Choke Check", "Da Buggah", "Slippah Thief",
@@ -318,6 +363,56 @@ const NICKNAMES = [
   "Da Real Kine", "Numbah One Nalu", "Tight Tina", "Mint Condition Maka",
   "Slow Poke Sam", "Cut Off Calvin", "Traffic Tammy", "West Side Wally",
   "Neighbor Island Nancy", "Windward Wren", "Leeward Larry"
+];
+
+// ── Secret bounty challenges (sailing/ocean themed) ───────────────────────────
+// Condition under which the HIT must occur for the bonus
+const BOUNTIES = [
+  "Make your hit while both you and your target are holding a drink 🍹",
+  "Make your hit while your target is actively looking at the ocean 🌊",
+  "Make your hit while someone else is mid-sentence talking about something totally different 😂",
+  "Make your hit while your target is standing at the bow or stern of the boat ⚓",
+  "Make your hit during a group conversation with 3+ people 🗣️",
+  "Make your hit within 60 seconds of someone jumping in the water 🏊",
+  "Make your hit while the boat is under sail (sails up, engine off) ⛵",
+  "Make your hit while your target is putting on or taking off sunscreen ☀️",
+  "Make your hit while your target is looking at their phone 📱",
+  "Make your hit while someone is taking a photo or video 📸",
+  "Make your hit while your target is eating or drinking 🍽️",
+  "Make your hit while anchored and the engine is off ⚓",
+  "Make your hit while your target is helping trim a sail or adjust lines 🪢",
+  "Make your hit while someone in the group is telling a story 📖",
+  "Make your hit while your target is applying or reapplying sunscreen ☀️",
+  "Make your hit during sunset or while someone comments on the view 🌅",
+  "Make your hit while your target is dangling their feet in the water 🦶",
+  "Make your hit right after someone says 'cheehoo' or 'shoots' 🤙",
+  "Make your hit while your target is sitting on the rail or edge of the boat 🚤",
+  "Make your hit while your target is talking to the skipper or captain 🧭"
+];
+
+// ── Secret missions (sailing/ocean themed) ────────────────────────────────────
+// Action the TARGET must perform (can happen any time, not just at kill moment)
+const MISSIONS = [
+  "Get your target to jump into the ocean 🌊",
+  "Get your target to give you a high-five ✋",
+  "Get your target to take a photo of you 📸",
+  "Get your target to pour you a drink 🍹",
+  "Get your target to point something out on the horizon 🔭",
+  "Get your target to help you with something on the boat (line, sail, anchor) ⛵",
+  "Get your target to sing or hum any song 🎵",
+  "Get your target to apply sunscreen to your back or shoulders ☀️",
+  "Get your target to fist bump you 👊",
+  "Get your target to tell you the time ⌚",
+  "Get your target to name a fish they've seen or caught 🐟",
+  "Get your target to point out which direction is Oahu (or any island) 🏝️",
+  "Get your target to yell something into the wind 🌬️",
+  "Get your target to hand you something (water, snack, sunglasses, anything) 🙌",
+  "Get your target to take off and put back on their hat 🧢",
+  "Get your target to do a shaka at you 🤙",
+  "Get your target to sit next to you for at least 2 minutes ⏱️",
+  "Get your target to look through binoculars or a camera 🔭",
+  "Get your target to untangle or coil a rope 🪢",
+  "Get your target to call out a landmark or navigation point on the coast 🗺️"
 ];
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -415,15 +510,12 @@ function generateCode() {
   const w = ['WOLF','HAWK','VIPER','BLADE','GHOST','SHADOW','RAVEN','STORM','COBRA','DUSK','IRON','ECHO'];
   return w[Math.floor(Math.random()*w.length)] + Math.floor(Math.random()*90+10);
 }
-function assignNicknames(players) {
-  const pool = shuffle([...NICKNAMES]);
-  const result = {};
-  players.forEach((p, i) => { result[p] = pool[i % pool.length]; });
-  return result;
+function pickUnique(pool, n) {
+  return shuffle([...pool]).slice(0, n);
 }
 
 async function startGame() {
-  if (!firebaseReady) { alert('Firebase is not configured yet. See the banner at the top for setup instructions.'); return; }
+  if (!firebaseReady) { alert('Firebase is not configured yet.'); return; }
   G.kwPerPlayer = parseInt(document.getElementById('kw-per-player').value);
   if (G.players.length < 2) { alert('Add at least 2 players.'); return; }
   const minWords = G.players.length * G.kwPerPlayer;
@@ -434,14 +526,20 @@ async function startGame() {
   G.gameCode = generateCode(); G.isHost = true;
   const sp = shuffle(G.players);
   const sw = shuffle(G.killWords);
-  const nicknames = assignNicknames(sp);
+  const nickPool    = shuffle([...NICKNAMES]);
+  const bountyPool  = shuffle([...BOUNTIES]);
+  const missionPool = shuffle([...MISSIONS]);
 
   G.assignments = sp.map((player, i) => ({
     player,
-    nickname: nicknames[player],
+    nickname:     nickPool[i % nickPool.length],
+    bounty:       bountyPool[i % bountyPool.length],
+    bountyDone:   false,
+    mission:      missionPool[i % missionPool.length],
+    missionDone:  false,
     targetPlayer: sp[(i+1) % sp.length],
-    killWords: sw.slice(i * G.kwPerPlayer, i * G.kwPerPlayer + G.kwPerPlayer),
-    killPoints: 0, alive: true, isRogue: false, rogueTarget: null
+    killWords:    sw.slice(i * G.kwPerPlayer, i * G.kwPerPlayer + G.kwPerPlayer),
+    killPoints:   0, alive: true, isRogue: false, rogueTarget: null
   }));
   G.assassinations = [];
 
@@ -459,19 +557,27 @@ async function startGame() {
 function renderHostGame(game) {
   document.getElementById('host-game-code').textContent = game.gameCode;
   document.getElementById('alive-count').textContent = game.assignments.filter(a=>a.alive).length + ' alive';
-  document.getElementById('host-player-list').innerHTML = game.assignments.map(a => `
-    <div class="player-row">
+  document.getElementById('host-player-list').innerHTML = game.assignments.map(a => {
+    const bonusBadges = [
+      a.bountyDone  ? '<span class="badge badge-bounty" style="font-size:10px; margin-left:4px;">💜 Bounty</span>'  : '',
+      a.missionDone ? '<span class="badge badge-mission" style="font-size:10px; margin-left:4px;">🌊 Mission</span>' : ''
+    ].join('');
+    return `<div class="player-row">
       <div class="avatar ${!a.alive?'dead':a.isRogue?'rogue':''}">${a.player[0]}</div>
       <div style="flex:1;">
-        <div>${esc(a.player)}</div>
+        <div>${esc(a.player)} ${bonusBadges}</div>
         <div class="muted" style="font-size:12px;">${esc(a.nickname)}</div>
       </div>
       <span style="font-size:12px;color:var(--color-text-secondary);margin-right:8px;">${a.killPoints} pts</span>
       ${!a.alive?'<span class="badge badge-danger">Eliminated</span>':a.isRogue?'<span class="badge badge-warn">Rogue</span>':'<span class="badge badge-success">Alive</span>'}
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const log = document.getElementById('assassination-log');
   log.innerHTML = (game.assassinations||[]).length
-    ? game.assassinations.map(e=>`<div style="padding:5px 0;border-bottom:1px solid var(--color-border);">🎯 <strong>${esc(e.killer)}</strong> got <strong>${esc(e.victim)}</strong> with "<em>${esc(e.word)}</em>"</div>`).join('')
+    ? game.assassinations.map(e => {
+        const extras = [e.bountyBonus?'💜 Bounty':'', e.missionBonus?'🌊 Mission':''].filter(Boolean).join(' ');
+        return `<div style="padding:5px 0;border-bottom:1px solid var(--color-border);">🎯 <strong>${esc(e.killer)}</strong> got <strong>${esc(e.victim)}</strong> with "<em>${esc(e.word)}</em>"${extras?' <span style="font-size:12px;">'+extras+'</span>':''}</div>`;
+      }).join('')
     : '<span class="muted">No hits yet.</span>';
 }
 
@@ -513,7 +619,7 @@ function renderPlayerView(assignment, game) {
   document.getElementById('pv-game-code').textContent = game.gameCode || G.gameCode;
   document.getElementById('pv-kill-points').textContent = assignment.killPoints;
 
-  const statusEl  = document.getElementById('pv-status');
+  const statusEl   = document.getElementById('pv-status');
   const assassCard = document.getElementById('pv-assassinate-card');
   const rogueCard  = document.getElementById('pv-rogue-card');
 
@@ -531,19 +637,71 @@ function renderPlayerView(assignment, game) {
     rogueCard.style.display = 'none'; assassCard.style.display = '';
   }
 
-  const allA   = (game.assignments || G.assignments);
+  // Target info
+  const allA    = (game.assignments || G.assignments);
   const targetA = allA.find(a => a.player === assignment.targetPlayer);
   document.getElementById('pv-target').textContent = assignment.targetPlayer || '—';
   document.getElementById('pv-target-nickname').textContent = targetA ? '🤙 aka ' + targetA.nickname : '';
   document.getElementById('pv-target-identity').textContent = targetA
     ? (!targetA.alive ? '💀 Already eliminated' : targetA.isRogue ? '⚠️ This player went rogue' : '') : '';
 
+  // Hit words
   document.getElementById('pv-kill-words').innerHTML = (assignment.killWords||[]).map(w =>
     `<div class="kw-pill"><span>🎯 "${esc(w)}"</span></div>`).join('');
   const sel = document.getElementById('pv-kill-word-used');
   sel.innerHTML = (assignment.killWords||[]).map(w => `<option value="${esc(w)}">${esc(w)}</option>`).join('');
+
+  // Bounty
+  const bountyDone = assignment.bountyDone;
+  document.getElementById('pv-bounty').innerHTML = `
+    <div class="bonus-pill bounty ${bountyDone?'strikethrough':''}">
+      <span class="bonus-pts">+2 pts</span>
+      <div class="bonus-label">Bounty condition</div>
+      <div class="bonus-text">${esc(assignment.bounty||'')}</div>
+    </div>`;
+  const bBtn = document.getElementById('pv-bounty-btn');
+  if (bountyDone) { bBtn.textContent = '✅ Bounty claimed!'; bBtn.disabled = true; bBtn.style.opacity = '0.5'; }
+  else { bBtn.textContent = '✓ Claim bounty (+2 pts)'; bBtn.disabled = false; bBtn.style.opacity = '1'; }
+
+  // Mission
+  const missionDone = assignment.missionDone;
+  document.getElementById('pv-mission').innerHTML = `
+    <div class="bonus-pill mission ${missionDone?'strikethrough':''}">
+      <span class="bonus-pts">+2 pts</span>
+      <div class="bonus-label">Mission objective</div>
+      <div class="bonus-text">${esc(assignment.mission||'')}</div>
+    </div>`;
+  const mBtn = document.getElementById('pv-mission-btn');
+  if (missionDone) { mBtn.textContent = '✅ Mission complete!'; mBtn.disabled = true; mBtn.style.opacity = '0.5'; }
+  else { mBtn.textContent = '✓ Claim mission (+2 pts)'; mBtn.disabled = false; mBtn.style.opacity = '1'; }
 }
 
+// ── Claim bonus (bounty or mission) ──────────────────────────────────────────
+async function claimBonus(type) {
+  const code = document.getElementById('pv-game-code').textContent || G.gameCode;
+  const game = await dbLoad(code);
+  if (!game) return;
+  const a = game.assignments.find(a => a.player === G.currentPlayerName);
+  if (!a || !a.alive) return;
+  if (type === 'bounty'  && a.bountyDone)  return;
+  if (type === 'mission' && a.missionDone) return;
+
+  if (type === 'bounty') {
+    if (!confirm('Claim your bounty bonus? Only claim if you genuinely completed the condition. Honor system!')) return;
+    a.bountyDone  = true; a.killPoints += 2;
+    game.assassinations.push({ killer: a.player, victim: '(bonus)', word: '', bountyBonus: true });
+  } else {
+    if (!confirm('Claim your mission bonus? Only claim if your target actually completed the action!')) return;
+    a.missionDone = true; a.killPoints += 2;
+    game.assassinations.push({ killer: a.player, victim: '(bonus)', word: '', missionBonus: true });
+  }
+
+  await dbSave(code, game);
+  G = { ...G, ...game };
+  renderPlayerView(a, game);
+}
+
+// ── Record assassination ──────────────────────────────────────────────────────
 async function recordAssassination() {
   const msg      = document.getElementById('pv-assassinate-msg');
   const wordUsed = document.getElementById('pv-kill-word-used').value;
@@ -563,8 +721,8 @@ async function recordAssassination() {
   game.assassinations.push({ killer: killerA.player, victim: victimA.player, word: wordUsed });
 
   if (wasTargetingKiller) {
-    killerA.isRogue = true;
-    const remaining = game.assignments.filter(a => a.alive && a.player !== killerA.player);
+    killerA.isRogue      = true;
+    const remaining      = game.assignments.filter(a => a.alive && a.player !== killerA.player);
     killerA.rogueTarget  = remaining.length ? remaining[Math.floor(Math.random()*remaining.length)].player : null;
     killerA.killWords    = victimA.killWords;
     killerA.targetPlayer = killerA.rogueTarget;
@@ -587,15 +745,17 @@ function showGameOver(game) {
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
   const sorted = [...game.assignments].sort((a,b) => b.killPoints - a.killPoints);
   const maxPts = sorted[0].killPoints;
-  document.getElementById('final-standings').innerHTML = sorted.map((a,i) => `
-    <div class="player-row">
+  document.getElementById('final-standings').innerHTML = sorted.map((a,i) => {
+    const bonuses = [a.bountyDone?'💜':'', a.missionDone?'🌊':''].filter(Boolean).join('');
+    return `<div class="player-row">
       <div class="avatar">${i===0?'🏆':a.player[0]}</div>
       <div style="flex:1;">
-        <div>${esc(a.player)}${a.isRogue?' 🔥':''}</div>
+        <div>${esc(a.player)}${a.isRogue?' 🔥':''}${bonuses?' '+bonuses:''}</div>
         <div class="muted" style="font-size:12px;">${esc(a.nickname)}</div>
       </div>
       <span style="font-weight:${a.killPoints===maxPts?'700':'400'};">${a.killPoints} pts</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   showScreen('screen-gameover');
 }
 
