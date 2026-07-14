@@ -130,7 +130,8 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <button class="btn btn-secondary" onclick="showScreen('screen-join')">Join a game</button>
     </div>
     <p class="muted" style="text-align:center; margin-top:1.5rem; font-size:12px;">One person hosts — everyone else joins on their own device with the game code.</p>
-    <div style="text-align:center; margin-top:2rem;">
+    <div style="text-align:center; margin-top:2rem; display:flex; justify-content:center; align-items:center; gap:1rem;">
+      <span style="font-size:11px; color:var(--color-text-secondary);">Hit List v1.4</span>
       <button onclick="showScreen('screen-admin-login')" style="background:none; border:none; font-size:12px; color:var(--color-text-secondary); cursor:pointer; font-family:inherit; text-decoration:underline;">Admin</button>
     </div>
   </div>
@@ -318,6 +319,10 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
         <span class="muted">Game code</span>
         <span id="pv-game-code" style="font-weight:600; letter-spacing:3px;"></span>
       </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-top:0.5rem;">
+      <span style="font-size:11px; color:var(--color-text-secondary);">Hit List v1.4</span>
+      <button onclick="showScreen('screen-admin-login')" style="background:none; border:none; font-size:11px; color:var(--color-text-secondary); cursor:pointer; font-family:inherit; text-decoration:underline;">Admin</button>
     </div>
   </div>
 
@@ -753,52 +758,53 @@ async function claimBonus(type) {
 async function recordAssassination() {
   const msg      = document.getElementById('pv-assassinate-msg');
   const wordUsed = document.getElementById('pv-kill-word-used').value;
-  const code     = G.gameCode || document.getElementById('pv-game-code').textContent;
-  msg.textContent = 'Processing…';
+  msg.innerHTML  = '<span style="color:var(--color-text-secondary)">Processing…</span>';
 
-  if (!code) { msg.innerHTML = '<span style="color:var(--color-danger-text)">No game code found — try refreshing.</span>'; return; }
-
-  let game;
   try {
-    game = await dbLoad(code);
+    if (!firebaseReady) throw new Error('Firebase not ready yet — wait a moment and try again.');
+    const code = G.gameCode;
+    if (!code) throw new Error('No game code — try closing and rejoining the game.');
+
+    const game = await dbLoad(code);
+    if (!game) throw new Error(`Game "${code}" not found in database.`);
+
+    if (!game.assignments) throw new Error('Game data is missing assignments.');
+    if (!game.assassinations) game.assassinations = [];
+
+    const killerA = game.assignments.find(a => a.player === G.currentPlayerName);
+    if (!killerA) throw new Error(`Player "${G.currentPlayerName}" not found in game.`);
+
+    const victimA = game.assignments.find(a => a.player === killerA.targetPlayer);
+    if (!victimA) throw new Error(`Target "${killerA.targetPlayer}" not found in game.`);
+    if (!victimA.alive) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Target is already eliminated.</span>'; return; }
+
+    const wasTargetingKiller = victimA.targetPlayer === killerA.player;
+    victimA.alive = false;
+    killerA.killPoints += 1;
+    game.assassinations.push({ killer: killerA.player, victim: victimA.player, word: wordUsed });
+
+    if (wasTargetingKiller) {
+      killerA.isRogue      = true;
+      const remaining      = game.assignments.filter(a => a.alive && a.player !== killerA.player);
+      killerA.rogueTarget  = remaining.length ? remaining[Math.floor(Math.random()*remaining.length)].player : null;
+      killerA.killWords    = victimA.killWords;
+      killerA.targetPlayer = killerA.rogueTarget;
+    } else {
+      killerA.targetPlayer = victimA.targetPlayer;
+      killerA.killWords    = victimA.killWords;
+    }
+
+    if (game.assignments.filter(a=>a.alive).length <= 1 || killerA.isRogue) game.gameStarted = false;
+
+    await dbSave(code, game);
+    G = { ...G, ...game };
+    renderPlayerView(killerA, game);
+    msg.innerHTML = `<span style="color:var(--color-success-text)">✅ ${esc(victimA.player)} pau! ${wasTargetingKiller ? '🔥 You went rogue!' : `New target: ${esc(killerA.targetPlayer||'—')}`}</span>`;
+    if (!game.gameStarted) setTimeout(() => showGameOver(game), 1500);
+
   } catch(e) {
-    msg.innerHTML = `<span style="color:var(--color-danger-text)">Error loading game: ${esc(String(e))}</span>`;
-    return;
+    msg.innerHTML = `<span style="color:var(--color-danger-text)">❌ ${esc(String(e.message || e))}</span>`;
   }
-
-  if (!game) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not load game state — check your connection.</span>'; return; }
-
-  if (!game.assassinations) game.assassinations = [];
-
-  const killerA = game.assignments.find(a => a.player === G.currentPlayerName);
-  if (!killerA) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not find your player — try refreshing.</span>'; return; }
-
-  const victimA = game.assignments.find(a => a.player === killerA.targetPlayer);
-  if (!victimA || !victimA.alive) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Target is already eliminated.</span>'; return; }
-
-  const wasTargetingKiller = victimA.targetPlayer === killerA.player;
-  victimA.alive = false;
-  killerA.killPoints += 1;
-  game.assassinations.push({ killer: killerA.player, victim: victimA.player, word: wordUsed });
-
-  if (wasTargetingKiller) {
-    killerA.isRogue      = true;
-    const remaining      = game.assignments.filter(a => a.alive && a.player !== killerA.player);
-    killerA.rogueTarget  = remaining.length ? remaining[Math.floor(Math.random()*remaining.length)].player : null;
-    killerA.killWords    = victimA.killWords;
-    killerA.targetPlayer = killerA.rogueTarget;
-  } else {
-    killerA.targetPlayer = victimA.targetPlayer;
-    killerA.killWords    = victimA.killWords;
-  }
-
-  if (game.assignments.filter(a=>a.alive).length <= 1 || killerA.isRogue) game.gameStarted = false;
-
-  await dbSave(code, game);
-  G = { ...G, ...game };
-  renderPlayerView(killerA, game);
-  msg.innerHTML = `<span style="color:var(--color-success-text)">✅ ${esc(victimA.player)} pau! ${wasTargetingKiller ? '🔥 You went rogue!' : `New target: ${esc(killerA.targetPlayer||'—')}`}</span>`;
-  if (!game.gameStarted) setTimeout(() => showGameOver(game), 1500);
 }
 
 // ── Game over ─────────────────────────────────────────────────────────────────
