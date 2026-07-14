@@ -7,7 +7,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, set, get, onValue, remove, query, orderByKey } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey:            "AIzaSyAZiZ97nsD9YkTYbxK_Pfbfxlsy4d8zsC8",
@@ -23,9 +23,11 @@
   const db  = getDatabase(app);
 
   window._db = {
-    save:  (code, data) => set(ref(db, 'games/' + code), data),
-    load:  async (code) => { const snap = await get(ref(db, 'games/' + code)); return snap.exists() ? snap.val() : null; },
-    watch: (code, cb)   => onValue(ref(db, 'games/' + code), snap => { if (snap.exists()) cb(snap.val()); })
+    save:       (code, data) => set(ref(db, 'games/' + code), data),
+    load:       async (code) => { const snap = await get(ref(db, 'games/' + code)); return snap.exists() ? snap.val() : null; },
+    watch:      (code, cb)   => onValue(ref(db, 'games/' + code), snap => { if (snap.exists()) cb(snap.val()); }),
+    loadAll:    async ()     => { const snap = await get(ref(db, 'games')); return snap.exists() ? snap.val() : {}; },
+    deleteGame: (code)       => remove(ref(db, 'games/' + code))
   };
 
   window.dispatchEvent(new Event('firebase-ready'));
@@ -107,6 +109,10 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
 .mission-complete-btn { background: var(--color-teal-bg);   color: var(--color-teal-text);   border: 1px solid #5eead4; }
 .game-code-display { font-size: 32px; font-weight: 700; letter-spacing: 5px; text-align: center; padding: 1rem; background: var(--color-bg-secondary); border-radius: var(--radius-md); margin: 0.5rem 0; }
 .strikethrough { text-decoration: line-through; opacity: 0.5; }
+.admin-game-card { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+.admin-game-card.running { border-left: 4px solid #1a7f3c; }
+.admin-game-card.finished { border-left: 4px solid #666; }
+.admin-stat { display: inline-block; font-size: 12px; background: var(--color-bg-secondary); border-radius: var(--radius-sm); padding: 2px 8px; margin: 2px; color: var(--color-text-secondary); }
 </style>
 </head>
 <body>
@@ -124,6 +130,9 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
       <button class="btn btn-secondary" onclick="showScreen('screen-join')">Join a game</button>
     </div>
     <p class="muted" style="text-align:center; margin-top:1.5rem; font-size:12px;">One person hosts — everyone else joins on their own device with the game code.</p>
+    <div style="text-align:center; margin-top:2rem;">
+      <button onclick="showScreen('screen-admin-login')" style="background:none; border:none; font-size:12px; color:var(--color-text-secondary); cursor:pointer; font-family:inherit; text-decoration:underline;">Admin</button>
+    </div>
   </div>
 
   <!-- HOST SETUP -->
@@ -324,6 +333,44 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
     </div>
     <div class="btn-row" style="justify-content:center;">
       <button class="btn btn-primary" onclick="showScreen('screen-home')">Play again</button>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div id="screen-admin-login" class="screen">
+    <h2>Admin</h2>
+    <div class="card">
+      <label class="muted" style="display:block; margin-bottom:4px;">Password</label>
+      <input type="password" id="admin-password" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')adminLogin()" />
+      <div id="admin-login-error" class="error-msg"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="showScreen('screen-home')">← Back</button>
+        <button class="btn btn-primary" onclick="adminLogin()">Log in →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="screen-admin" class="screen">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h2 style="margin:0;">Admin dashboard</h2>
+      <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-home')">← Home</button>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div>
+          <span id="admin-summary" class="muted"></span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="adminRefresh()">↻ Refresh</button>
+          <button class="btn btn-danger-outline btn-sm" onclick="adminDeleteFinished()">Delete finished</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-game-list">
+      <p class="muted" style="text-align:center; padding:2rem 0;">Loading games…</p>
     </div>
   </div>
 
@@ -543,7 +590,7 @@ async function startGame() {
   }));
   G.assassinations = [];
 
-  const payload = { gameCode: G.gameCode, assignments: G.assignments, assassinations: [], gameStarted: true, players: G.players };
+  const payload = { gameCode: G.gameCode, assignments: G.assignments, assassinations: [], gameStarted: true, players: G.players, createdAt: Date.now() };
   await dbSave(G.gameCode, payload);
   renderHostGame(G);
   showScreen('screen-host-game');
@@ -757,6 +804,125 @@ function showGameOver(game) {
     </div>`;
   }).join('');
   showScreen('screen-gameover');
+}
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+const ADMIN_PASSWORD = 'P3dro!';
+const SEVEN_DAYS_MS  = 7 * 24 * 60 * 60 * 1000;
+
+function adminLogin() {
+  const pw  = document.getElementById('admin-password').value;
+  const err = document.getElementById('admin-login-error');
+  if (pw !== ADMIN_PASSWORD) { err.textContent = 'Incorrect password.'; return; }
+  err.textContent = '';
+  document.getElementById('admin-password').value = '';
+  showScreen('screen-admin');
+  adminRefresh();
+}
+
+async function adminRefresh() {
+  const listEl = document.getElementById('admin-game-list');
+  const sumEl  = document.getElementById('admin-summary');
+  listEl.innerHTML = '<p class="muted" style="text-align:center; padding:2rem 0;">Loading…</p>';
+
+  const all = await window._db.loadAll();
+  if (!all || !Object.keys(all).length) {
+    listEl.innerHTML = '<p class="muted" style="text-align:center; padding:2rem 0;">No games in the database.</p>';
+    sumEl.textContent = '0 games';
+    return;
+  }
+
+  const now     = Date.now();
+  const games   = Object.entries(all).map(([code, g]) => ({ code, ...g }));
+  const running  = games.filter(g => g.gameStarted);
+  const finished = games.filter(g => !g.gameStarted);
+
+  // Auto-purge finished games older than 7 days
+  const toDelete = finished.filter(g => g.createdAt && (now - g.createdAt) > SEVEN_DAYS_MS);
+  for (const g of toDelete) { await window._db.deleteGame(g.code); }
+  const displayed = games.filter(g => !toDelete.find(d => d.code === g.code));
+
+  sumEl.textContent = `${displayed.length} game${displayed.length!==1?'s':''} · ${running.length} running · ${finished.length - toDelete.length} finished${toDelete.length ? ` · ${toDelete.length} auto-purged` : ''}`;
+
+  if (!displayed.length) {
+    listEl.innerHTML = '<p class="muted" style="text-align:center; padding:2rem 0;">No games found.</p>';
+    return;
+  }
+
+  // Sort: running first, then by createdAt desc
+  displayed.sort((a, b) => {
+    if (a.gameStarted !== b.gameStarted) return a.gameStarted ? -1 : 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+
+  listEl.innerHTML = displayed.map(g => {
+    const assignments  = g.assignments || [];
+    const alive        = assignments.filter(a => a.alive).length;
+    const total        = assignments.length;
+    const hits         = (g.assassinations || []).filter(a => a.victim && a.victim !== '(bonus)').length;
+    const leader       = [...assignments].sort((a,b) => b.killPoints - a.killPoints)[0];
+    const age          = g.createdAt ? adminTimeAgo(now - g.createdAt) : 'unknown age';
+    const statusClass  = g.gameStarted ? 'running' : 'finished';
+    const statusBadge  = g.gameStarted
+      ? '<span class="badge badge-success" style="font-size:11px;">Running</span>'
+      : '<span class="badge" style="font-size:11px; background:var(--color-bg-secondary); color:var(--color-text-secondary);">Finished</span>';
+
+    return `<div class="admin-game-card ${statusClass}">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+        <div>
+          <span style="font-size:18px; font-weight:700; letter-spacing:2px;">${esc(g.code)}</span>
+          ${statusBadge}
+        </div>
+        <div style="display:flex; gap:6px;">
+          ${g.gameStarted ? `<button class="btn btn-danger-outline btn-sm" onclick="adminStopGame('${esc(g.code)}')">Stop</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="adminDeleteGame('${esc(g.code)}')">Delete</button>
+        </div>
+      </div>
+      <div style="margin-bottom:0.5rem;">
+        <span class="admin-stat">👥 ${alive}/${total} alive</span>
+        <span class="admin-stat">🎯 ${hits} hit${hits!==1?'s':''}</span>
+        <span class="admin-stat">🕐 ${age}</span>
+        ${leader ? `<span class="admin-stat">🏆 ${esc(leader.player)} (${leader.killPoints} pts)</span>` : ''}
+      </div>
+      <div style="font-size:12px; color:var(--color-text-secondary);">
+        ${assignments.map(a => `<span style="margin-right:6px; ${!a.alive?'opacity:0.4;text-decoration:line-through;':''}">${esc(a.player)}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function adminStopGame(code) {
+  if (!confirm(`Force-stop game ${code}? Players will see the game over screen.`)) return;
+  const game = await window._db.load(code);
+  if (!game) return;
+  game.gameStarted = false;
+  await window._db.save(code, game);
+  adminRefresh();
+}
+
+async function adminDeleteGame(code) {
+  if (!confirm(`Delete game ${code} from the database? This cannot be undone.`)) return;
+  await window._db.deleteGame(code);
+  adminRefresh();
+}
+
+async function adminDeleteFinished() {
+  if (!confirm('Delete all finished games? Running games will not be affected.')) return;
+  const all = await window._db.loadAll();
+  if (!all) return;
+  const finished = Object.entries(all).filter(([, g]) => !g.gameStarted);
+  for (const [code] of finished) { await window._db.deleteGame(code); }
+  adminRefresh();
+}
+
+function adminTimeAgo(ms) {
+  const m = Math.floor(ms / 60000);
+  if (m < 1)   return 'just now';
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
