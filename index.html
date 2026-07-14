@@ -726,7 +726,7 @@ function renderPlayerView(assignment, game) {
 
 // ── Claim bonus (bounty or mission) ──────────────────────────────────────────
 async function claimBonus(type) {
-  const code = document.getElementById('pv-game-code').textContent || G.gameCode;
+  const code = G.gameCode || document.getElementById('pv-game-code').textContent;
   const game = await dbLoad(code);
   if (!game) return;
   const a = game.assignments.find(a => a.player === G.currentPlayerName);
@@ -753,13 +753,17 @@ async function claimBonus(type) {
 async function recordAssassination() {
   const msg      = document.getElementById('pv-assassinate-msg');
   const wordUsed = document.getElementById('pv-kill-word-used').value;
-  const code     = document.getElementById('pv-game-code').textContent || G.gameCode;
+  const code     = G.gameCode || document.getElementById('pv-game-code').textContent;
   msg.textContent = 'Processing…';
 
+  if (!code) { msg.innerHTML = '<span style="color:var(--color-danger-text)">No game code found — try refreshing.</span>'; return; }
+
   const game = await dbLoad(code);
-  if (!game) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not load game state.</span>'; return; }
+  if (!game) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not load game state — check your connection.</span>'; return; }
 
   const killerA = game.assignments.find(a => a.player === G.currentPlayerName);
+  if (!killerA) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not find your player — try refreshing.</span>'; return; }
+
   const victimA = game.assignments.find(a => a.player === killerA.targetPlayer);
   if (!victimA || !victimA.alive) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Target is already eliminated.</span>'; return; }
 
