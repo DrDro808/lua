@@ -647,6 +647,7 @@ async function joinGame() {
   const assignment = game.assignments.find(a => a.player.toLowerCase() === name.toLowerCase());
   if (!assignment) { err.textContent = `"${esc(name)}" isn't in this game. Check your name matches what the host entered.`; return; }
   err.textContent = '';
+  localStorage.setItem('hitlist_session', JSON.stringify({ name: assignment.player, code }));
   G = { ...G, ...game, currentPlayerName: assignment.player, isHost: false };
   renderPlayerView(assignment, game);
   showScreen('screen-player-view');
@@ -790,6 +791,7 @@ async function recordAssassination() {
 // ── Game over ─────────────────────────────────────────────────────────────────
 function showGameOver(game) {
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  localStorage.removeItem('hitlist_session');
   const sorted = [...game.assignments].sort((a,b) => b.killPoints - a.killPoints);
   const maxPts = sorted[0].killPoints;
   document.getElementById('final-standings').innerHTML = sorted.map((a,i) => {
@@ -937,9 +939,40 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Session restore ───────────────────────────────────────────────────────────
+async function tryRestoreSession() {
+  const raw = localStorage.getItem('hitlist_session');
+  if (!raw) return false;
+  let session;
+  try { session = JSON.parse(raw); } catch(e) { localStorage.removeItem('hitlist_session'); return false; }
+  const { name, code } = session;
+  if (!name || !code) { localStorage.removeItem('hitlist_session'); return false; }
+
+  const game = await dbLoad(code);
+  if (!game) { localStorage.removeItem('hitlist_session'); return false; }
+
+  // Game is over — clear session and don't restore
+  if (!game.gameStarted) { localStorage.removeItem('hitlist_session'); return false; }
+
+  const assignment = game.assignments.find(a => a.player === name);
+  if (!assignment) { localStorage.removeItem('hitlist_session'); return false; }
+
+  G = { ...G, ...game, currentPlayerName: name, isHost: false };
+  renderPlayerView(assignment, game);
+  showScreen('screen-player-view');
+  dbWatch(code, updatedGame => {
+    G = { ...G, ...updatedGame };
+    const a = updatedGame.assignments.find(a => a.player === G.currentPlayerName);
+    if (a) renderPlayerView(a, updatedGame);
+    if (!updatedGame.gameStarted && updatedGame.assassinations && updatedGame.assassinations.length) showGameOver(updatedGame);
+  });
+  return true;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderKillWords();
 renderPlayerList();
+window.addEventListener('firebase-ready', () => { tryRestoreSession(); });
 </script>
 </body>
 </html>
