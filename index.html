@@ -756,33 +756,24 @@ async function recordAssassination() {
   const code     = G.gameCode || document.getElementById('pv-game-code').textContent;
   msg.textContent = 'Processing…';
 
-  console.log('[HitList] recordAssassination called');
-  console.log('[HitList] G.gameCode:', G.gameCode);
-  console.log('[HitList] G.currentPlayerName:', G.currentPlayerName);
-  console.log('[HitList] firebaseReady:', firebaseReady);
-  console.log('[HitList] code resolved to:', code);
-  console.log('[HitList] window._db:', window._db);
-
   if (!code) { msg.innerHTML = '<span style="color:var(--color-danger-text)">No game code found — try refreshing.</span>'; return; }
 
   let game;
   try {
     game = await dbLoad(code);
-    console.log('[HitList] dbLoad result:', game);
   } catch(e) {
-    console.error('[HitList] dbLoad threw:', e);
     msg.innerHTML = `<span style="color:var(--color-danger-text)">Error loading game: ${esc(String(e))}</span>`;
     return;
   }
 
   if (!game) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not load game state — check your connection.</span>'; return; }
 
+  if (!game.assassinations) game.assassinations = [];
+
   const killerA = game.assignments.find(a => a.player === G.currentPlayerName);
-  console.log('[HitList] killerA:', killerA);
   if (!killerA) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Could not find your player — try refreshing.</span>'; return; }
 
   const victimA = game.assignments.find(a => a.player === killerA.targetPlayer);
-  console.log('[HitList] victimA:', victimA);
   if (!victimA || !victimA.alive) { msg.innerHTML = '<span style="color:var(--color-danger-text)">Target is already eliminated.</span>'; return; }
 
   const wasTargetingKiller = victimA.targetPlayer === killerA.player;
