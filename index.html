@@ -141,6 +141,7 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
     <div class="tab-bar">
       <button class="tab active" onclick="switchTab('tab-players',this)">Players</button>
       <button class="tab" onclick="switchTab('tab-killwords',this)">Hit words</button>
+      <button class="tab" onclick="switchTab('tab-bonuses',this)">Bonuses</button>
       <button class="tab" onclick="switchTab('tab-settings',this)">Settings</button>
     </div>
 
@@ -179,6 +180,45 @@ input[type=text]:focus, select:focus { border-color: var(--color-text); }
         <div id="kw-tags"></div>
         <div class="divider"></div>
         <p class="muted" style="font-size:12px;">💡 Words that come up naturally in conversation are the sneakiest.</p>
+      </div>
+    </div>
+
+    <div id="tab-bonuses" class="hidden">
+
+      <!-- Bounties -->
+      <div class="card card-bounty">
+        <h3 style="color:var(--color-purple-text);">💜 Secret Bounties</h3>
+        <p class="muted" style="margin-bottom:0.75rem;">Each player gets a random bounty condition. Pick a preset or customize the list.</p>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:0.75rem;" id="bounty-preset-btns"></div>
+        <div class="divider"></div>
+        <div style="display:flex; gap:8px; margin-bottom:0.5rem;">
+          <input type="text" id="bounty-input" placeholder="Add a custom bounty condition" style="flex:1; margin-bottom:0;" onkeydown="if(event.key==='Enter')addBonusItem('bounty')" />
+          <button class="btn btn-sm bounty-complete-btn" onclick="addBonusItem('bounty')" style="white-space:nowrap;">Add</button>
+        </div>
+        <div id="bounty-error" class="error-msg"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; margin-bottom:0.5rem;">
+          <span class="muted" id="bounty-count"></span>
+          <button onclick="clearBonusItems('bounty')" style="font-size:12px; color:var(--color-danger-text); background:none; border:none; cursor:pointer; font-family:inherit;">Clear all</button>
+        </div>
+        <div id="bounty-list"></div>
+      </div>
+
+      <!-- Missions -->
+      <div class="card card-mission">
+        <h3 style="color:var(--color-teal-text);">🌊 Secret Missions</h3>
+        <p class="muted" style="margin-bottom:0.75rem;">Each player gets a random mission for their target to complete. Pick a preset or customize.</p>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:0.75rem;" id="mission-preset-btns"></div>
+        <div class="divider"></div>
+        <div style="display:flex; gap:8px; margin-bottom:0.5rem;">
+          <input type="text" id="mission-input" placeholder="Add a custom mission" style="flex:1; margin-bottom:0;" onkeydown="if(event.key==='Enter')addBonusItem('mission')" />
+          <button class="btn btn-sm mission-complete-btn" onclick="addBonusItem('mission')" style="white-space:nowrap;">Add</button>
+        </div>
+        <div id="mission-error" class="error-msg"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; margin-bottom:0.5rem;">
+          <span class="muted" id="mission-count"></span>
+          <button onclick="clearBonusItems('mission')" style="font-size:12px; color:var(--color-danger-text); background:none; border:none; cursor:pointer; font-family:inherit;">Clear all</button>
+        </div>
+        <div id="mission-list"></div>
       </div>
     </div>
 
@@ -417,59 +457,117 @@ const NICKNAMES = [
   "Neighbor Island Nancy", "Windward Wren", "Leeward Larry"
 ];
 
-// ── Secret bounty challenges (sailing/ocean themed) ───────────────────────────
-// Condition under which the HIT must occur for the bonus
-const BOUNTIES = [
-  "Make your hit while both you and your target are holding a drink 🍹",
-  "Make your hit while your target is actively looking at the ocean 🌊",
-  "Make your hit while someone else is mid-sentence talking about something totally different 😂",
-  "Make your hit while your target is standing at the bow or stern of the boat ⚓",
-  "Make your hit during a group conversation with 3+ people 🗣️",
-  "Make your hit within 60 seconds of someone jumping in the water 🏊",
-  "Make your hit while the boat is under sail (sails up, engine off) ⛵",
-  "Make your hit while your target is putting on or taking off sunscreen ☀️",
-  "Make your hit while your target is looking at their phone 📱",
-  "Make your hit while someone is taking a photo or video 📸",
-  "Make your hit while your target is eating or drinking 🍽️",
-  "Make your hit while anchored and the engine is off ⚓",
-  "Make your hit while your target is helping trim a sail or adjust lines 🪢",
-  "Make your hit while someone in the group is telling a story 📖",
-  "Make your hit while your target is applying or reapplying sunscreen ☀️",
-  "Make your hit during sunset or while someone comments on the view 🌅",
-  "Make your hit while your target is dangling their feet in the water 🦶",
-  "Make your hit right after someone says 'cheehoo' or 'shoots' 🤙",
-  "Make your hit while your target is sitting on the rail or edge of the boat 🚤",
-  "Make your hit while your target is talking to the skipper or captain 🧭"
-];
+// ── Bounty & Mission presets ──────────────────────────────────────────────────
+const BOUNTY_PRESETS = {
+  sailing: {
+    label: "⛵ Sailing",
+    items: [
+      "Make your hit while both you and your target are holding a drink 🍹",
+      "Make your hit while your target is actively looking at the ocean 🌊",
+      "Make your hit while someone else is mid-sentence talking about something totally different 😂",
+      "Make your hit while your target is standing at the bow or stern of the boat ⚓",
+      "Make your hit during a group conversation with 3+ people 🗣️",
+      "Make your hit within 60 seconds of someone jumping in the water 🏊",
+      "Make your hit while the boat is under sail (sails up, engine off) ⛵",
+      "Make your hit while your target is putting on or taking off sunscreen ☀️",
+      "Make your hit while your target is looking at their phone 📱",
+      "Make your hit while someone is taking a photo or video 📸",
+      "Make your hit while your target is eating or drinking 🍽️",
+      "Make your hit while anchored and the engine is off ⚓",
+      "Make your hit while your target is helping trim a sail or adjust lines 🪢",
+      "Make your hit while someone in the group is telling a story 📖",
+      "Make your hit during sunset or while someone comments on the view 🌅",
+      "Make your hit while your target is dangling their feet in the water 🦶",
+      "Make your hit right after someone says 'cheehoo' or 'shoots' 🤙",
+      "Make your hit while your target is sitting on the rail or edge of the boat 🚤",
+      "Make your hit while your target is talking to the skipper or captain 🧭"
+    ]
+  },
+  disney: {
+    label: "🏰 Disney / Aulani",
+    items: [
+      "Make your hit while your target is taking a photo in front of something Disney 📸",
+      "Make your hit while someone nearby is humming or singing a Disney song 🎵",
+      "Make your hit while your target is wearing Mickey ears or Disney merch 🐭",
+      "Make your hit while you're both in the pool or lazy river 🌊",
+      "Make your hit while your target is eating or drinking something from the resort 🍦",
+      "Make your hit during a group conversation with 3+ people 🗣️",
+      "Make your hit while your target is looking at their phone 📱",
+      "Make your hit while a Disney character is visible nearby 🎭",
+      "Make your hit while someone in the group is telling a story 📖",
+      "Make your hit while your target is applying sunscreen ☀️",
+      "Make your hit within 60 seconds of someone saying 'magical' or 'Disney' ✨",
+      "Make your hit while your target is holding a resort drink or snack 🥤",
+      "Make your hit at the beach or near the water features 🏖️",
+      "Make your hit while your target is waving or smiling at a character 👋",
+      "Make your hit while both of you are floating in the lazy river 🦆",
+      "Make your hit right after someone takes a group selfie 🤳",
+      "Make your hit while your target is looking at the resort map or schedule 🗺️",
+      "Make your hit while your target is in line for something ⏳",
+      "Make your hit while someone nearby is singing 'It's a Small World' 🎶",
+      "Make your hit while your target is checking in or talking to resort staff 🏨"
+    ]
+  }
+};
 
-// ── Secret missions (sailing/ocean themed) ────────────────────────────────────
-// Action the TARGET must perform (can happen any time, not just at kill moment)
-const MISSIONS = [
-  "Get your target to jump into the ocean 🌊",
-  "Get your target to give you a high-five ✋",
-  "Get your target to take a photo of you 📸",
-  "Get your target to pour you a drink 🍹",
-  "Get your target to point something out on the horizon 🔭",
-  "Get your target to help you with something on the boat (line, sail, anchor) ⛵",
-  "Get your target to sing or hum any song 🎵",
-  "Get your target to apply sunscreen to your back or shoulders ☀️",
-  "Get your target to fist bump you 👊",
-  "Get your target to tell you the time ⌚",
-  "Get your target to name a fish they've seen or caught 🐟",
-  "Get your target to point out which direction is Oahu (or any island) 🏝️",
-  "Get your target to yell something into the wind 🌬️",
-  "Get your target to hand you something (water, snack, sunglasses, anything) 🙌",
-  "Get your target to take off and put back on their hat 🧢",
-  "Get your target to do a shaka at you 🤙",
-  "Get your target to sit next to you for at least 2 minutes ⏱️",
-  "Get your target to look through binoculars or a camera 🔭",
-  "Get your target to untangle or coil a rope 🪢",
-  "Get your target to call out a landmark or navigation point on the coast 🗺️"
-];
+const MISSION_PRESETS = {
+  sailing: {
+    label: "⛵ Sailing",
+    items: [
+      "Get your target to jump into the ocean 🌊",
+      "Get your target to give you a high-five ✋",
+      "Get your target to take a photo of you 📸",
+      "Get your target to pour you a drink 🍹",
+      "Get your target to point something out on the horizon 🔭",
+      "Get your target to help you with something on the boat (line, sail, anchor) ⛵",
+      "Get your target to sing or hum any song 🎵",
+      "Get your target to apply sunscreen to your back or shoulders ☀️",
+      "Get your target to fist bump you 👊",
+      "Get your target to tell you the time ⌚",
+      "Get your target to name a fish they've seen or caught 🐟",
+      "Get your target to point out which direction is Oahu (or any island) 🏝️",
+      "Get your target to yell something into the wind 🌬️",
+      "Get your target to hand you something (water, snack, sunglasses, anything) 🙌",
+      "Get your target to take off and put back on their hat 🧢",
+      "Get your target to do a shaka at you 🤙",
+      "Get your target to sit next to you for at least 2 minutes ⏱️",
+      "Get your target to look through binoculars or a camera 🔭",
+      "Get your target to untangle or coil a rope 🪢",
+      "Get your target to call out a landmark or navigation point on the coast 🗺️"
+    ]
+  },
+  disney: {
+    label: "🏰 Disney / Aulani",
+    items: [
+      "Get your target to pose for a photo with you 📸",
+      "Get your target to give you a high-five ✋",
+      "Get your target to sing or hum any Disney song 🎵",
+      "Get your target to go down a water slide with you 🌊",
+      "Get your target to wave at a Disney character 👋",
+      "Get your target to pour you or hand you a drink 🥤",
+      "Get your target to apply sunscreen to your back ☀️",
+      "Get your target to fist bump you 👊",
+      "Get your target to float next to you in the lazy river 🦆",
+      "Get your target to tell you their favorite Disney movie 🎬",
+      "Get your target to take a photo of you in front of something Disney 📸",
+      "Get your target to do a Mickey Mouse impression 🐭",
+      "Get your target to name all seven dwarfs (in any order) 🎯",
+      "Get your target to hand you something (sunscreen, snack, towel, anything) 🙌",
+      "Get your target to sit next to you for at least 2 minutes ⏱️",
+      "Get your target to quote any line from a Disney movie 🎭",
+      "Get your target to do a shaka at you 🤙",
+      "Get your target to tell you the time ⌚",
+      "Get your target to recommend something to eat or do at the resort 🗺️",
+      "Get your target to take off and put back on their hat or sunglasses 🕶️"
+    ]
+  }
+};
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let G = {
   players: [], killWords: [...DEFAULT_KILL_WORDS], kwPerPlayer: 3,
+  activeBounties: [...BOUNTY_PRESETS.sailing.items],
+  activeMissions: [...MISSION_PRESETS.sailing.items],
   gameCode: null, assignments: [], assassinations: [],
   currentPlayerName: null, isHost: false
 };
@@ -492,7 +590,7 @@ function showScreen(id) {
 function switchTab(id, btn) {
   document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  ['tab-players','tab-killwords','tab-settings'].forEach(t =>
+  ['tab-players','tab-killwords','tab-bonuses','tab-settings'].forEach(t =>
     document.getElementById(t).classList.toggle('hidden', t !== id));
 }
 
@@ -552,7 +650,78 @@ function renderKillWords() {
   ).join('');
 }
 
-// ── Game start ────────────────────────────────────────────────────────────────
+// ── Bonus editing (bounties & missions) ───────────────────────────────────────
+function renderBonusPresetBtns(type) {
+  const presets = type === 'bounty' ? BOUNTY_PRESETS : MISSION_PRESETS;
+  const active  = type === 'bounty' ? G.activeBounties : G.activeMissions;
+  const el      = document.getElementById(type + '-preset-btns');
+  el.innerHTML  = Object.entries(presets).map(([key, preset]) => {
+    const isActive = JSON.stringify(active) === JSON.stringify(preset.items);
+    return `<button onclick="loadBonusPreset('${type}','${key}')"
+      style="padding:5px 12px; border-radius:var(--radius-sm); font-size:13px; cursor:pointer; font-family:inherit; font-weight:500; border:1px solid var(--color-border);
+      background:${isActive ? 'var(--color-text)' : 'var(--color-bg-secondary)'}; color:${isActive ? 'var(--color-bg)' : 'var(--color-text)'};">
+      ${preset.label}
+    </button>`;
+  }).join('');
+}
+
+function loadBonusPreset(type, key) {
+  const preset = type === 'bounty' ? BOUNTY_PRESETS[key] : MISSION_PRESETS[key];
+  if (!preset) return;
+  if (type === 'bounty') G.activeBounties = [...preset.items];
+  else                   G.activeMissions = [...preset.items];
+  renderBonusList(type);
+  renderBonusPresetBtns(type);
+}
+
+function addBonusItem(type) {
+  const input = document.getElementById(type + '-input');
+  const text  = input.value.trim();
+  const err   = document.getElementById(type + '-error');
+  if (!text) { err.textContent = 'Enter a ' + type + ' condition.'; return; }
+  const list = type === 'bounty' ? G.activeBounties : G.activeMissions;
+  if (list.includes(text)) { err.textContent = 'Already in list.'; return; }
+  err.textContent = '';
+  list.push(text);
+  input.value = '';
+  renderBonusList(type);
+  renderBonusPresetBtns(type);
+}
+
+function removeBonusItem(type, idx) {
+  if (type === 'bounty') G.activeBounties.splice(idx, 1);
+  else                   G.activeMissions.splice(idx, 1);
+  renderBonusList(type);
+  renderBonusPresetBtns(type);
+}
+
+function clearBonusItems(type) {
+  if (!confirm('Clear all ' + type + ' items?')) return;
+  if (type === 'bounty') G.activeBounties = [];
+  else                   G.activeMissions = [];
+  renderBonusList(type);
+  renderBonusPresetBtns(type);
+}
+
+function renderBonusList(type) {
+  const list  = type === 'bounty' ? G.activeBounties : G.activeMissions;
+  const color = type === 'bounty' ? 'var(--color-purple-text)' : 'var(--color-teal-text)';
+  document.getElementById(type + '-count').textContent = list.length + ' items in pool';
+  document.getElementById(type + '-list').innerHTML = list.map((item, i) => `
+    <div style="display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid var(--color-border); font-size:13px;">
+      <span style="flex:1; line-height:1.4;">${esc(item)}</span>
+      <button onclick="removeBonusItem('${type}',${i})" style="background:none; border:none; cursor:pointer; color:var(--color-text-secondary); font-size:15px; flex-shrink:0; padding:0; line-height:1;">×</button>
+    </div>`).join('');
+}
+
+function initBonusTab() {
+  renderBonusPresetBtns('bounty');
+  renderBonusPresetBtns('mission');
+  renderBonusList('bounty');
+  renderBonusList('mission');
+}
+
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
@@ -574,13 +743,15 @@ async function startGame() {
   if (G.killWords.length < minWords) {
     alert(`Need at least ${minWords} hit words (${G.players.length} players × ${G.kwPerPlayer}). Add more or reduce words per player.`); return;
   }
+  if (!G.activeBounties.length) { alert('Add at least one bounty condition in the Bonuses tab.'); return; }
+  if (!G.activeMissions.length) { alert('Add at least one mission in the Bonuses tab.'); return; }
 
   G.gameCode = generateCode(); G.isHost = true;
   const sp = shuffle(G.players);
   const sw = shuffle(G.killWords);
   const nickPool    = shuffle([...NICKNAMES]);
-  const bountyPool  = shuffle([...BOUNTIES]);
-  const missionPool = shuffle([...MISSIONS]);
+  const bountyPool  = shuffle([...G.activeBounties]);
+  const missionPool = shuffle([...G.activeMissions]);
 
   G.assignments = sp.map((player, i) => ({
     player,
@@ -991,6 +1162,7 @@ async function tryRestoreSession() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderKillWords();
 renderPlayerList();
+initBonusTab();
 window.addEventListener('firebase-ready', () => { tryRestoreSession(); });
 </script>
 </body>
